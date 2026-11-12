@@ -1,0 +1,374 @@
+{
+  "name": "dotnet-file-apps-toolkit",
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "version": "0.1.0",
+  "publisher": "poychang",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/poychang/dotnet-file-apps-toolkit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/poychang/dotnet-file-apps-toolkit/issues"
+  },
+  "homepage": "https://github.com/poychang/dotnet-file-apps-toolkit#readme",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    ".NET",
+    "dotnet",
+    "C#",
+    "file-based apps",
+    "dotnet run"
+  ],
+  "l10n": "./l10n",
+  "main": "./dist/extension.js",
+  "extensionKind": [
+    "workspace"
+  ],
+  "activationEvents": [
+    "onLanguage:csharp"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "%capabilities.untrustedWorkspaces.description%",
+      "restrictedConfigurations": [
+        "dotnetFileAppsToolkit.dotnetPath",
+        "dotnetFileAppsToolkit.run.args"
+      ]
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "%capabilities.virtualWorkspaces.description%"
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "dotnetFileApps.runFile",
+        "title": "%command.runFile%",
+        "category": "%category%",
+        "icon": "$(play)"
+      },
+      {
+        "command": "dotnetFileApps.restore",
+        "title": "%command.restore%",
+        "category": "%category%",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "dotnetFileApps.convertToProject",
+        "title": "%command.convertToProject%",
+        "category": "%category%",
+        "icon": "$(project)"
+      },
+      {
+        "command": "dotnetFileApps.previewComments",
+        "title": "%command.previewComments%",
+        "category": "%category%",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "dotnetFileApps.showActions",
+        "title": "%command.showActions%",
+        "category": "%category%",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "dotnetFileApps.runWithArgs",
+        "title": "%command.runWithArgs%",
+        "category": "%category%"
+      },
+      {
+        "command": "dotnetFileApps.build",
+        "title": "%command.build%",
+        "category": "%category%"
+      },
+      {
+        "command": "dotnetFileApps.clean",
+        "title": "%command.clean%",
+        "category": "%category%"
+      },
+      {
+        "command": "dotnetFileApps.publish",
+        "title": "%command.publish%",
+        "category": "%category%"
+      },
+      {
+        "command": "dotnetFileApps.checkSdk",
+        "title": "%command.checkSdk%",
+        "category": "%category%"
+      },
+      {
+        "command": "dotnetFileApps.openDocs",
+        "title": "%command.openDocs%",
+        "category": "%category%"
+      },
+      {
+        "command": "dotnetFileApps.enableForFile",
+        "title": "%command.enableForFile%",
+        "category": "%category%"
+      },
+      {
+        "command": "dotnetFileApps.disableForFile",
+        "title": "%command.disableForFile%",
+        "category": "%category%"
+      },
+      {
+        "command": "dotnetFileApps.showLogs",
+        "title": "%command.showLogs%",
+        "category": "%category%"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "dotnetFileApps.runFile",
+          "group": "navigation@1",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
+        },
+        {
+          "command": "dotnetFileApps.restore",
+          "group": "navigation@2",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
+        },
+        {
+          "command": "dotnetFileApps.convertToProject",
+          "group": "navigation@3",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
+        },
+        {
+          "command": "dotnetFileApps.previewComments",
+          "group": "navigation@4",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceExtname =~ /^\\.cs$/i && resource in dotnetFileApps.taggedCommentUris"
+        },
+        {
+          "command": "dotnetFileApps.showActions",
+          "group": "navigation@5",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "dotnetFileApps.runFile",
+          "group": "dotnetFileApps@1",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
+        },
+        {
+          "command": "dotnetFileApps.previewComments",
+          "group": "dotnetFileApps@2",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceExtname =~ /^\\.cs$/i && resource in dotnetFileApps.taggedCommentUris"
+        },
+        {
+          "command": "dotnetFileApps.showActions",
+          "group": "dotnetFileApps@3",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "dotnetFileApps.runFile",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.restore",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.convertToProject",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.previewComments",
+          "when": "resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.showActions",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.runWithArgs",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.build",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.clean",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.publish",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.enableForFile",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i && !(resource in dotnetFileApps.fileAppUris)"
+        },
+        {
+          "command": "dotnetFileApps.disableForFile",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i && resource in dotnetFileApps.fileAppUris"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "%configuration.title%",
+      "properties": {
+        "dotnetFileAppsToolkit.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%config.enabled%"
+        },
+        "dotnetFileAppsToolkit.fileDetection": {
+          "type": "string",
+          "enum": [
+            "strict",
+            "standalone",
+            "manual"
+          ],
+          "enumDescriptions": [
+            "%config.fileDetection.strict%",
+            "%config.fileDetection.standalone%",
+            "%config.fileDetection.manual%"
+          ],
+          "default": "strict",
+          "markdownDescription": "%config.fileDetection%"
+        },
+        "dotnetFileAppsToolkit.dotnetPath": {
+          "type": "string",
+          "default": "dotnet",
+          "scope": "machine",
+          "markdownDescription": "%config.dotnetPath%"
+        },
+        "dotnetFileAppsToolkit.autoSaveBeforeRun": {
+          "type": "string",
+          "enum": [
+            "prompt",
+            "always",
+            "never"
+          ],
+          "enumDescriptions": [
+            "%config.autoSaveBeforeRun.prompt%",
+            "%config.autoSaveBeforeRun.always%",
+            "%config.autoSaveBeforeRun.never%"
+          ],
+          "default": "prompt",
+          "markdownDescription": "%config.autoSaveBeforeRun%"
+        },
+        "dotnetFileAppsToolkit.run.args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "%config.run.args%"
+        },
+        "dotnetFileAppsToolkit.comments.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%config.comments.enabled%"
+        },
+        "dotnetFileAppsToolkit.comments.highlight.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%config.comments.highlight.enabled%"
+        },
+        "dotnetFileAppsToolkit.comments.highlight.strategy": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "injection",
+            "decorations",
+            "off"
+          ],
+          "enumDescriptions": [
+            "%config.comments.highlight.strategy.auto%",
+            "%config.comments.highlight.strategy.injection%",
+            "%config.comments.highlight.strategy.decorations%",
+            "%config.comments.highlight.strategy.off%"
+          ],
+          "default": "auto",
+          "markdownDescription": "%config.comments.highlight.strategy%"
+        },
+        "dotnetFileAppsToolkit.comments.markdown.hover": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%config.comments.markdown.hover%"
+        },
+        "dotnetFileAppsToolkit.comments.previewOnOpen": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%config.comments.previewOnOpen%"
+        },
+        "dotnetFileAppsToolkit.comments.unknownTagDiagnostic": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%config.comments.unknownTagDiagnostic%"
+        }
+      }
+    },
+    "taskDefinitions": [
+      {
+        "type": "dotnet-file-app",
+        "required": [
+          "action",
+          "file"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "run",
+              "restore",
+              "build",
+              "clean",
+              "publish"
+            ],
+            "description": "%taskDefinition.action%"
+          },
+          "file": {
+            "type": "string",
+            "description": "%taskDefinition.file%"
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "%taskDefinition.args%"
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run check-types && node esbuild.js",
+    "package": "npm run check-types && node esbuild.js --production",
+    "watch": "node esbuild.js --watch",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src test",
+    "test:unit": "mocha",
+    "test": "npm run test:unit"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.20.5",
+    "@types/vscode": "^1.100.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.14.0",
+    "mocha": "^12.0.3",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2"
+  }
+}

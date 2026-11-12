@@ -1,0 +1,6 @@
+{
+  "spec": "test/unit/**/*.test.ts",
+  "extension": ["ts"],
+  "node-option": ["import=tsx"],
+  "timeout": 10000
+}
