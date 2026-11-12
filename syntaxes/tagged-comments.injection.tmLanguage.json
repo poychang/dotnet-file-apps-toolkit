@@ -1,0 +1,242 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Tagged comments in C#",
+  "comment": "Highlights the body of /*<language> ... */ comments with the tagged language. The body uses a begin/while rule so a line containing */ always ends the embedded region, matching C# where the first */ closes the comment. Keep the tags in sync with src/comments/embeddedLanguageRegistry.ts (code-mode languages only).",
+  "scopeName": "dotnetfileapps.tagged-comments.injection",
+  "injectionSelector": "L:source.cs -comment -string",
+  "patterns": [
+    {
+      "include": "#tagged-yaml"
+    },
+    {
+      "include": "#tagged-json"
+    },
+    {
+      "include": "#tagged-sql"
+    },
+    {
+      "include": "#tagged-xml"
+    },
+    {
+      "include": "#tagged-bash"
+    },
+    {
+      "include": "#tagged-powershell"
+    },
+    {
+      "include": "#tagged-csharp"
+    }
+  ],
+  "repository": {
+    "tagged-yaml": {
+      "name": "comment.block.tagged.yaml.cs",
+      "begin": "(/\\*)((?i:yaml|yml))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.yaml",
+          "patterns": [
+            {
+              "include": "source.yaml"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-json": {
+      "name": "comment.block.tagged.json.cs",
+      "begin": "(/\\*)((?i:json))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.json",
+          "patterns": [
+            {
+              "include": "source.json"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-sql": {
+      "name": "comment.block.tagged.sql.cs",
+      "begin": "(/\\*)((?i:sql))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.sql",
+          "patterns": [
+            {
+              "include": "source.sql"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-xml": {
+      "name": "comment.block.tagged.xml.cs",
+      "begin": "(/\\*)((?i:xml))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.xml",
+          "patterns": [
+            {
+              "include": "text.xml"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-bash": {
+      "name": "comment.block.tagged.bash.cs",
+      "begin": "(/\\*)((?i:bash|sh|shell))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.bash",
+          "patterns": [
+            {
+              "include": "source.shell"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-powershell": {
+      "name": "comment.block.tagged.powershell.cs",
+      "begin": "(/\\*)((?i:powershell|ps1))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.powershell",
+          "patterns": [
+            {
+              "include": "source.powershell"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-csharp": {
+      "name": "comment.block.tagged.csharp.cs",
+      "begin": "(/\\*)((?i:csharp|cs))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.csharp",
+          "patterns": [
+            {
+              "include": "source.cs"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { UserFacingError } from '../core/errors';
 import type { Logger } from '../core/logging';
 import { getSettings } from '../core/settings';
-import { CodeHighlighter } from './codeHighlighter';
+import type { CodeHighlighter } from './codeHighlighter';
 import { defaultRegistry } from './embeddedLanguageRegistry';
 import { createMarkdownRenderer, escapeHtml } from './markdownRenderer';
 import { parsePreviewMessage, renderPreview, type PreviewLabels, type PreviewMessage, type RenderedBlock } from './previewHtml';
@@ -194,12 +194,12 @@ export class TaggedCommentPreviewManager implements vscode.Disposable {
   private readonly previews = new Map<string, TaggedCommentPreview>();
   private readonly autoOpened = new Set<string>();
   private readonly disposables: vscode.Disposable[] = [];
-  private highlighter: Promise<CodeHighlighter | undefined> | undefined;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
     readonly service: TaggedCommentService,
     readonly logger: Logger,
+    private readonly getHighlighter: () => Promise<CodeHighlighter | undefined>,
   ) {
     this.disposables.push(
       service.onDidChange((doc) => this.previews.get(doc.uri.toString())?.scheduleUpdate()),
@@ -277,14 +277,6 @@ export class TaggedCommentPreviewManager implements vscode.Disposable {
     });
     const { html, blocks } = renderPreview(this.service.getScan(document), { labels: labels(), markdown, highlighter });
     return { version, html, blocks };
-  }
-
-  private getHighlighter(): Promise<CodeHighlighter | undefined> {
-    this.highlighter ??= CodeHighlighter.create().catch((err) => {
-      this.logger.warn(`Syntax highlighter failed to load; previews use plain text: ${err}`);
-      return undefined;
-    });
-    return this.highlighter;
   }
 
   private async pageHtml(webview: vscode.Webview, media: vscode.Uri, content: string): Promise<string> {

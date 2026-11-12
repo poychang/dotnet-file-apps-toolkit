@@ -347,6 +347,15 @@
           }
         }
       }
+    ],
+    "grammars": [
+      {
+        "scopeName": "dotnetfileapps.tagged-comments.injection",
+        "path": "./syntaxes/tagged-comments.injection.tmLanguage.json",
+        "injectTo": [
+          "source.cs"
+        ]
+      }
     ]
   },
   "scripts": {

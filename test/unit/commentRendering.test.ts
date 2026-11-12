@@ -3,6 +3,7 @@ import { CodeHighlighter } from '../../src/comments/codeHighlighter';
 import { markdownDecorationRanges } from '../../src/comments/markdownSyntax';
 import { createMarkdownRenderer, neutralizeImages } from '../../src/comments/markdownRenderer';
 import { parsePreviewMessage, renderPreview, type PreviewLabels } from '../../src/comments/previewHtml';
+import { mapTokensToSource } from '../../src/comments/syntaxGrammarAdapter';
 import { scanTaggedComments } from '../../src/comments/taggedCommentScanner';
 
 const labels: PreviewLabels = {
@@ -147,6 +148,21 @@ describe('code highlighting and preview HTML', function () {
     const { html, blocks } = renderPreview(scanTaggedComments('/** doc */'), { labels, markdown: (s) => s });
     assert.equal(blocks.length, 0);
     assert.match(html, /No tagged comments/);
+  });
+
+  it('maps themed tokens of an indented CRLF body back to document ranges for editor decorations', () => {
+    const text = 'var a = 1;\r\n    /*yaml\r\n    name: "demo" # note\r\n    port: 8080\r\n    */\r\nvar b = 2;';
+    const [block] = scanTaggedComments(text).blocks;
+    const spans = mapTokensToSource(block.lineMap, highlighter.tokenizeStyles(block.normalizedBody, 'yaml')!);
+    const found = spans.map((s) => [text.slice(s.start, s.end), s.style.dark, s.style.light]);
+    assert.deepEqual(found, [
+      ['name', '#569CD6', '#800000'],
+      ['"demo"', '#CE9178', '#A31515'],
+      ['# note', '#6A9955', '#008000'],
+      ['port', '#569CD6', '#800000'],
+      ['8080', '#B5CEA8', '#098658'],
+    ]);
+    assert.ok(spans.every((s) => s.start >= block.bodyStartOffset && s.end <= block.bodyEndOffset));
   });
 });
 

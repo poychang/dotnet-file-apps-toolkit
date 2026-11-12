@@ -21,6 +21,21 @@ export interface HighlightedToken {
   readonly classes: string;
 }
 
+/** Colors of a token for light and dark themes; undefined colors mean the theme's default foreground. */
+export interface TokenStyle {
+  readonly light?: string;
+  readonly dark?: string;
+  /** Bit set of italic (1), bold (2) and underline (4), only when both themes agree. */
+  readonly fontStyle: number;
+}
+
+/** A styled token by column range within its line. Default-styled tokens are omitted. */
+export interface StyledToken {
+  readonly start: number;
+  readonly end: number;
+  readonly style: TokenStyle;
+}
+
 class Palette {
   private readonly index = new Map<string, number>();
   readonly colors: string[] = [];
@@ -41,6 +56,12 @@ class Palette {
   classFor(color: string | undefined): string | undefined {
     const i = color ? this.index.get(color.toUpperCase()) : undefined;
     return i === undefined ? undefined : `${this.prefix}${i}`;
+  }
+
+  /** Normalized color, or undefined for the default foreground and unknown colors. */
+  colorFor(color: string | undefined): string | undefined {
+    const key = color?.toUpperCase();
+    return key && this.index.has(key) ? key : undefined;
   }
 }
 
@@ -104,15 +125,35 @@ export class CodeHighlighter {
 
   /** Tokenizes `code` into lines, or returns undefined when the language is not loaded or the input is too large. */
   tokenize(code: string, language: string): HighlightedToken[][] | undefined {
+    return this.tokenizeWithThemes(code, language)?.map((line) => line.map((t) => ({ text: t.content, classes: this.classesFor(t) })));
+  }
+
+  /** Per-line styled column ranges for editor decorations; default-colored tokens are left out. */
+  tokenizeStyles(code: string, language: string): StyledToken[][] | undefined {
+    return this.tokenizeWithThemes(code, language)?.map((line) => {
+      const out: StyledToken[] = [];
+      let column = 0;
+      for (const t of line) {
+        const start = column;
+        column += t.content.length;
+        const style = this.styleFor(t);
+        if (style && t.content.trim()) {
+          out.push({ start, end: column, style });
+        }
+      }
+      return out;
+    });
+  }
+
+  private tokenizeWithThemes(code: string, language: string): ThemedTokenWithVariants[][] | undefined {
     if (!this.supports(language) || code.length > MAX_HIGHLIGHT_CHARS) {
       return undefined;
     }
-    const lines = this.core.codeToTokensWithThemes(code, {
+    return this.core.codeToTokensWithThemes(code, {
       lang: language,
       themes: { light: LIGHT_THEME, dark: DARK_THEME },
       tokenizeMaxLineLength: 5000,
     });
-    return lines.map((line) => line.map((t) => ({ text: t.content, classes: this.classesFor(t) })));
   }
 
   /** Highlighted `<pre>` HTML without line numbers, for fenced code inside Markdown. */
@@ -123,6 +164,14 @@ export class CodeHighlighter {
     }
     const body = lines.map((line) => tokensToHtml(line)).join('\n');
     return `<pre class="code" data-lang="${escapeHtml(language)}"><code>${body}</code></pre>`;
+  }
+
+  private styleFor(token: ThemedTokenWithVariants): TokenStyle | undefined {
+    const light = this.light.colorFor(token.variants.light?.color);
+    const dark = this.dark.colorFor(token.variants.dark?.color);
+    const lightFont = token.variants.light?.fontStyle ?? 0;
+    const fontStyle = lightFont > 0 && lightFont === (token.variants.dark?.fontStyle ?? 0) ? lightFont : 0;
+    return light || dark || fontStyle ? { light, dark, fontStyle } : undefined;
   }
 
   private classesFor(token: ThemedTokenWithVariants): string {
