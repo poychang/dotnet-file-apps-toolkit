@@ -1,0 +1,195 @@
+/* Tagged comment preview. Colors come from the active VS Code theme through CSS variables. */
+
+body {
+  padding: 0 16px 24px;
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  line-height: 1.5;
+}
+
+.block {
+  margin: 16px 0;
+  border: 1px solid var(--vscode-panel-border, var(--vscode-widget-border, transparent));
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.block.active {
+  border-color: var(--vscode-focusBorder);
+}
+
+.block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--vscode-sideBarSectionHeader-background, var(--vscode-editorWidget-background));
+  border-bottom: 1px solid var(--vscode-panel-border, transparent);
+}
+
+.badge {
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.warning {
+  color: var(--vscode-editorWarning-foreground);
+  font-size: 0.9em;
+}
+
+button {
+  font: inherit;
+  font-size: 0.9em;
+  padding: 1px 8px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 2px;
+  color: var(--vscode-button-secondaryForeground);
+  background: var(--vscode-button-secondaryBackground);
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+button.link {
+  border: none;
+  padding: 0;
+  color: var(--vscode-textLink-foreground);
+  background: none;
+}
+
+button.link:hover {
+  color: var(--vscode-textLink-activeForeground);
+  text-decoration: underline;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.block-body {
+  padding: 0 12px;
+}
+
+.mode-code .block-body {
+  padding: 0;
+}
+
+pre.code {
+  margin: 0;
+  padding: 8px 12px;
+  overflow-x: auto;
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  color: var(--vscode-editor-foreground);
+  background: var(--vscode-textCodeBlock-background);
+  tab-size: 4;
+}
+
+.markdown-body pre.code {
+  border-radius: 3px;
+  margin: 8px 0;
+}
+
+.line .ln {
+  display: inline-block;
+  min-width: 3ch;
+  margin-right: 12px;
+  text-align: right;
+  color: var(--vscode-editorLineNumber-foreground);
+  cursor: pointer;
+  user-select: none;
+}
+
+.line .ln:hover {
+  color: var(--vscode-editorLineNumber-activeForeground);
+}
+
+.note {
+  margin: 8px 12px;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+}
+
+.note.error {
+  color: var(--vscode-errorForeground);
+}
+
+.empty {
+  margin-top: 24px;
+}
+
+.markdown-body a {
+  color: var(--vscode-textLink-foreground);
+}
+
+.markdown-body a:hover {
+  color: var(--vscode-textLink-activeForeground);
+}
+
+.markdown-body code {
+  font-family: var(--vscode-editor-font-family);
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--vscode-textCodeBlock-background);
+}
+
+.markdown-body pre.code code {
+  padding: 0;
+  background: none;
+}
+
+.markdown-body blockquote {
+  margin: 8px 0;
+  padding: 0 12px;
+  border-left: 4px solid var(--vscode-textBlockQuote-border);
+  background: var(--vscode-textBlockQuote-background);
+}
+
+.markdown-body table {
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.markdown-body th,
+.markdown-body td {
+  padding: 4px 10px;
+  border: 1px solid var(--vscode-panel-border, var(--vscode-widget-border, currentColor));
+}
+
+.markdown-body .align-center {
+  text-align: center;
+}
+
+.markdown-body .align-right {
+  text-align: right;
+}
+
+.markdown-body img {
+  max-width: 100%;
+}
+
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid var(--vscode-panel-border, currentColor);
+}
+
+.md-image-blocked {
+  padding: 0 4px;
+  border: 1px dashed var(--vscode-descriptionForeground);
+  border-radius: 3px;
+  color: var(--vscode-descriptionForeground);
+}
