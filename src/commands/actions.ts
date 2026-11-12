@@ -1,0 +1,478 @@
+import { existsSync, promises as fs } from 'node:fs';
+import * as path from 'node:path';
+import * as vscode from 'vscode';
+import { CancelledError, UserFacingError } from '../core/errors';
+import { CONFIG_SECTION, getSettings, type AutoSaveBeforeRun } from '../core/settings';
+import {
+  buildBuildArgs,
+  buildCleanArgs,
+  buildConvertArgs,
+  buildPublishArgs,
+  buildRestoreArgs,
+  buildRunArgs,
+  convertedProjectFile,
+  defaultConvertOutputDir,
+  defaultPublishOutputDir,
+  formatArgumentString,
+  isPublishAotDisabled,
+  parseArgumentString,
+  type DotnetAction,
+} from '../dotnet/cliArgs';
+import type { CommandOutcome, DotnetCommand } from '../dotnet/commandRunner';
+import type { DetectionResult } from '../dotnet/fileAppDetector';
+import { COMMANDS, registerCommand, type ToolkitServices } from './registerCommands';
+import { resolveTargetUri, validateLocalCSharpFile } from './target';
+
+const LAST_ARGS_STATE_KEY = 'dotnetFileApps.lastArgs';
+const MAX_REMEMBERED_ARGS = 100;
+
+function actionTitle(action: DotnetAction): string {
+  switch (action) {
+    case 'run':
+      return vscode.l10n.t('Run');
+    case 'restore':
+      return vscode.l10n.t('Restore');
+    case 'build':
+      return vscode.l10n.t('Build');
+    case 'clean':
+      return vscode.l10n.t('Clean');
+    case 'publish':
+      return vscode.l10n.t('Publish');
+    case 'convert':
+      return vscode.l10n.t('Convert');
+  }
+}
+
+function taskName(action: DotnetAction, uri: vscode.Uri): string {
+  return `${actionTitle(action)} ${path.basename(uri.fsPath)}`;
+}
+
+interface FileAppTarget {
+  readonly uri: vscode.Uri;
+  readonly detection: DetectionResult;
+}
+
+/**
+ * Validates the clicked/active file, workspace trust and file-app recognition. Never relies on the
+ * context key used for menus: the handler re-checks everything for the URI it actually acts on.
+ */
+async function resolveFileAppTarget(services: ToolkitServices, arg: unknown, action: DotnetAction): Promise<FileAppTarget> {
+  const uri = await validateLocalCSharpFile(resolveTargetUri(arg));
+  if (!vscode.workspace.isTrusted) {
+    throw new UserFacingError(
+      vscode.l10n.t('"{0}" runs the .NET SDK, which can execute code from this folder. Trust the workspace to use it.', actionTitle(action)),
+      [{ title: vscode.l10n.t('Manage Workspace Trust'), run: () => vscode.commands.executeCommand('workbench.trust.manage') }],
+      'warning',
+    );
+  }
+  const detection = await services.detector.detect(uri);
+  if (detection.decision.isFileApp) {
+    return { uri, detection };
+  }
+  const name = path.basename(uri.fsPath);
+  const why =
+    detection.decision.reason === 'override-disabled'
+      ? vscode.l10n.t('The toolkit is disabled for this file.')
+      : detection.decision.reason === 'inside-project'
+        ? vscode.l10n.t('It is inside a folder tree that contains a project file (.csproj), so it is probably part of that project.')
+        : vscode.l10n.t('It does not start with #: directives or a dotnet shebang.');
+  const enable = vscode.l10n.t('Enable for This File');
+  const once = vscode.l10n.t('Continue Once');
+  const picked = await vscode.window.showWarningMessage(
+    vscode.l10n.t('{0} is not recognized as a .NET file-based app.', name),
+    { modal: true, detail: `${why}\n${vscode.l10n.t('The .NET CLI will treat it as a standalone file-based app.')}` },
+    enable,
+    once,
+  );
+  if (!picked) {
+    throw new CancelledError();
+  }
+  if (picked === enable) {
+    await services.detector.setOverride(uri, 'enabled');
+  }
+  return { uri, detection };
+}
+
+async function ensureSaved(uri: vscode.Uri, mode: AutoSaveBeforeRun, action: DotnetAction): Promise<void> {
+  const doc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
+  if (!doc?.isDirty) {
+    return;
+  }
+  const name = path.basename(uri.fsPath);
+  const save = async () => {
+    if (!(await doc.save())) {
+      throw new UserFacingError(vscode.l10n.t('{0} could not be saved. The command was not run.', name));
+    }
+  };
+  if (mode === 'always') {
+    return save();
+  }
+  if (mode === 'never') {
+    throw new UserFacingError(
+      vscode.l10n.t('{0} has unsaved changes. Save it first: the .NET CLI reads the file from disk.', name),
+      [
+        { title: vscode.l10n.t('Save'), run: () => doc.save() },
+        {
+          title: vscode.l10n.t('Open Settings'),
+          run: () => vscode.commands.executeCommand('workbench.action.openSettings', `${CONFIG_SECTION}.autoSaveBeforeRun`),
+        },
+      ],
+      'warning',
+    );
+  }
+  const saveLabel = vscode.l10n.t('Save');
+  const alwaysLabel = vscode.l10n.t('Always Save');
+  const picked = await vscode.window.showWarningMessage(
+    vscode.l10n.t('Save changes to {0} before "{1}"?', name, actionTitle(action)),
+    { modal: true, detail: vscode.l10n.t('The .NET CLI reads the file from disk.') },
+    saveLabel,
+    alwaysLabel,
+  );
+  if (!picked) {
+    throw new CancelledError();
+  }
+  if (picked === alwaysLabel) {
+    await vscode.workspace.getConfiguration(CONFIG_SECTION).update('autoSaveBeforeRun', 'always', vscode.ConfigurationTarget.Global);
+  }
+  await save();
+}
+
+/** Resolves the SDK (failing with an actionable error) and saves the document. */
+async function prepareExecution(services: ToolkitServices, uri: vscode.Uri, action: DotnetAction): Promise<string> {
+  const sdk = await services.sdk.require(uri);
+  await ensureSaved(uri, getSettings(uri).autoSaveBeforeRun, action);
+  return sdk.dotnetPath;
+}
+
+async function execute(
+  services: ToolkitServices,
+  command: DotnetCommand,
+  progressTitle?: string,
+): Promise<CommandOutcome> {
+  const running = services.runner.getRunning(command.fileUri);
+  if (running) {
+    const stop = vscode.l10n.t('Stop and Continue');
+    const picked = await vscode.window.showWarningMessage(
+      vscode.l10n.t('"{0}" is still running. Only one operation per file can run at a time.', running.name),
+      stop,
+    );
+    if (picked !== stop) {
+      throw new CancelledError();
+    }
+    await services.runner.stop(command.fileUri);
+  }
+  if (!progressTitle) {
+    return services.runner.execute(command);
+  }
+  return vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: progressTitle, cancellable: true },
+    (_progress, token) => services.runner.execute(command, token),
+  );
+}
+
+function ensureSucceeded(outcome: CommandOutcome, name: string): void {
+  if (outcome.cancelled) {
+    throw new CancelledError();
+  }
+  if (outcome.exitCode !== 0) {
+    const code = String(outcome.exitCode ?? '?');
+    const lastLine = outcome.output
+      ?.split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0)
+      .pop();
+    throw new UserFacingError(
+      lastLine
+        ? vscode.l10n.t('"{0}" failed (exit code {1}): {2}', name, code, lastLine)
+        : vscode.l10n.t('"{0}" failed (exit code {1}). See the terminal for details.', name, code),
+    );
+  }
+}
+
+function revealInOsLabel(): string {
+  return process.platform === 'darwin'
+    ? vscode.l10n.t('Reveal in Finder')
+    : process.platform === 'win32'
+      ? vscode.l10n.t('Reveal in File Explorer')
+      : vscode.l10n.t('Open Containing Folder');
+}
+
+async function runFile(services: ToolkitServices, uri: vscode.Uri, appArgs: readonly string[]): Promise<CommandOutcome> {
+  const dotnetPath = await prepareExecution(services, uri, 'run');
+  return execute(services, {
+    action: 'run',
+    fileUri: uri,
+    dotnetPath,
+    args: buildRunArgs(uri.fsPath, appArgs),
+    appArgs,
+    name: taskName('run', uri),
+    focus: true,
+  });
+}
+
+async function simpleAction(services: ToolkitServices, arg: unknown, action: 'restore' | 'build' | 'clean'): Promise<CommandOutcome> {
+  const { uri } = await resolveFileAppTarget(services, arg, action);
+  const dotnetPath = await prepareExecution(services, uri, action);
+  const name = path.basename(uri.fsPath);
+  const spec = {
+    restore: { args: buildRestoreArgs, progress: vscode.l10n.t('Restoring {0}…', name), done: vscode.l10n.t('Restore completed for {0}.', name) },
+    build: { args: buildBuildArgs, progress: vscode.l10n.t('Building {0}…', name), done: vscode.l10n.t('Build succeeded for {0}.', name) },
+    clean: { args: buildCleanArgs, progress: vscode.l10n.t('Cleaning {0}…', name), done: vscode.l10n.t('Clean completed for {0}.', name) },
+  }[action];
+  const command: DotnetCommand = { action, fileUri: uri, dotnetPath, args: spec.args(uri.fsPath), name: taskName(action, uri) };
+  const outcome = await execute(services, command, spec.progress);
+  ensureSucceeded(outcome, command.name);
+  void vscode.window.showInformationMessage(spec.done);
+  return outcome;
+}
+
+async function publish(services: ToolkitServices, arg: unknown): Promise<CommandOutcome> {
+  const { uri, detection } = await resolveFileAppTarget(services, arg, 'publish');
+  const file = uri.fsPath;
+  const name = path.basename(file);
+  const dir = path.dirname(file);
+  const defaultOut = defaultPublishOutputDir(file);
+
+  type OutputItem = vscode.QuickPickItem & { readonly choose: boolean };
+  const picked = await vscode.window.showQuickPick<OutputItem>(
+    [
+      {
+        label: `$(folder) ${vscode.l10n.t('Default Output Folder')}`,
+        description: path.relative(dir, defaultOut),
+        detail: vscode.l10n.t('Chosen by the .NET SDK (artifacts/<name> next to the file unless the file overrides it).'),
+        choose: false,
+      },
+      { label: `$(folder-opened) ${vscode.l10n.t('Choose Output Folder…')}`, choose: true },
+    ],
+    { title: vscode.l10n.t('Publish {0}', name), placeHolder: vscode.l10n.t('Where should the executable be published?') },
+  );
+  if (!picked) {
+    throw new CancelledError();
+  }
+  let outputDir: string | undefined;
+  if (picked.choose) {
+    const folders = await vscode.window.showOpenDialog({
+      canSelectFiles: false,
+      canSelectFolders: true,
+      canSelectMany: false,
+      defaultUri: vscode.Uri.file(dir),
+      openLabel: vscode.l10n.t('Publish Here'),
+      title: vscode.l10n.t('Publish {0}', name),
+    });
+    if (!folders?.[0]) {
+      throw new CancelledError();
+    }
+    outputDir = folders[0].fsPath;
+  }
+
+  const target = outputDir ?? defaultOut;
+  const detail = [vscode.l10n.t('Output folder: {0}', target)];
+  if (existsSync(target)) {
+    detail.push(vscode.l10n.t('The folder already exists; files in it may be overwritten.'));
+  }
+  if (!isPublishAotDisabled(detection.analysis.directives)) {
+    detail.push(
+      vscode.l10n.t(
+        'File-based apps are published with Native AOT by default. This requires the native toolchain for your platform (on Windows, the Visual Studio "Desktop development with C++" workload) and can take several minutes. Add "#:property PublishAot=false" to the file to publish a framework-dependent app instead.',
+      ),
+    );
+  }
+  const confirm = vscode.l10n.t('Publish');
+  if ((await vscode.window.showInformationMessage(vscode.l10n.t('Publish {0}?', name), { modal: true, detail: detail.join('\n\n') }, confirm)) !== confirm) {
+    throw new CancelledError();
+  }
+
+  const dotnetPath = await prepareExecution(services, uri, 'publish');
+  const command: DotnetCommand = {
+    action: 'publish',
+    fileUri: uri,
+    dotnetPath,
+    args: buildPublishArgs(file, outputDir),
+    name: taskName('publish', uri),
+  };
+  const outcome = await execute(services, command, vscode.l10n.t('Publishing {0}…', name));
+  ensureSucceeded(outcome, command.name);
+  const reveal = revealInOsLabel();
+  void vscode.window.showInformationMessage(vscode.l10n.t('Published {0} to {1}.', name, target), reveal).then((choice) => {
+    if (choice === reveal) {
+      void vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(existsSync(target) ? target : file));
+    }
+  });
+  return outcome;
+}
+
+async function promptConvertFolder(file: string): Promise<string> {
+  const dir = path.dirname(file);
+  const base = path.basename(file, path.extname(file));
+  let suggestion = path.join(dir, `${base}-project`);
+  for (let i = 2; existsSync(suggestion) && i < 100; i++) {
+    suggestion = path.join(dir, `${base}-project${i}`);
+  }
+  const value = await vscode.window.showInputBox({
+    title: vscode.l10n.t('Convert {0} to a Project', path.basename(file)),
+    prompt: vscode.l10n.t('Folder for the new project. It must not exist yet; relative paths are resolved from the file folder.'),
+    value: suggestion,
+    valueSelection: [suggestion.length - path.basename(suggestion).length, suggestion.length],
+    ignoreFocusOut: true,
+    validateInput: (input) => {
+      if (input.trim().length === 0) {
+        return vscode.l10n.t('Enter a folder path.');
+      }
+      return existsSync(path.resolve(dir, input.trim())) ? vscode.l10n.t('This folder already exists.') : undefined;
+    },
+  });
+  if (value === undefined) {
+    throw new CancelledError();
+  }
+  return path.resolve(dir, value.trim());
+}
+
+async function convertToProject(services: ToolkitServices, arg: unknown): Promise<CommandOutcome> {
+  const { uri } = await resolveFileAppTarget(services, arg, 'convert');
+  const file = uri.fsPath;
+  const name = path.basename(file);
+  const defaultOut = defaultConvertOutputDir(file);
+  const chooseOther = vscode.l10n.t('Choose Another Folder…');
+  let outputDir: string | undefined;
+
+  if (existsSync(defaultOut)) {
+    const picked = await vscode.window.showWarningMessage(
+      vscode.l10n.t('The folder "{0}" already exists.', path.basename(defaultOut)),
+      {
+        modal: true,
+        detail: vscode.l10n.t('"dotnet project convert" creates {0} and never writes into an existing folder. Choose a new folder for the project.', defaultOut),
+      },
+      chooseOther,
+    );
+    if (picked !== chooseOther) {
+      throw new CancelledError();
+    }
+    outputDir = await promptConvertFolder(file);
+  } else {
+    const convert = vscode.l10n.t('Convert');
+    const picked = await vscode.window.showInformationMessage(
+      vscode.l10n.t('Convert {0} to a project?', name),
+      {
+        modal: true,
+        detail: [
+          vscode.l10n.t('A new folder will be created: {0}', defaultOut),
+          vscode.l10n.t('It will contain {0} and a copy of {1} whose #: directives are moved into the project file.', path.basename(convertedProjectFile(file, defaultOut)), name),
+          vscode.l10n.t('The original file is kept unchanged.'),
+        ].join('\n'),
+      },
+      convert,
+      chooseOther,
+    );
+    if (!picked) {
+      throw new CancelledError();
+    }
+    if (picked === chooseOther) {
+      outputDir = await promptConvertFolder(file);
+    }
+  }
+
+  const dotnetPath = await prepareExecution(services, uri, 'convert');
+  const target = outputDir ?? defaultOut;
+  // Re-check right before running: never let the CLI run against a folder created meanwhile.
+  if (existsSync(target)) {
+    throw new UserFacingError(vscode.l10n.t('The folder "{0}" already exists. Nothing was converted.', target), [], 'warning');
+  }
+  // Newer SDKs can offer to delete the source in interactive mode; keep a copy to guarantee it survives.
+  const original = await fs.readFile(file);
+  const command: DotnetCommand = {
+    action: 'convert',
+    fileUri: uri,
+    dotnetPath,
+    // Explicit --output and a captured (non-interactive) process: the CLI can never prompt for the
+    // output folder or for deleting the source file.
+    args: buildConvertArgs(file, target),
+    name: taskName('convert', uri),
+    presentation: 'captured',
+  };
+  let outcome: CommandOutcome;
+  try {
+    outcome = await execute(services, command, vscode.l10n.t('Converting {0} to a project…', name));
+  } finally {
+    if (!existsSync(file)) {
+      await fs.writeFile(file, original);
+      services.logger.warn(`The .NET CLI removed ${file} during conversion; it was restored.`);
+    }
+  }
+  ensureSucceeded(outcome, command.name);
+
+  const projectFile = convertedProjectFile(file, target);
+  try {
+    await fs.stat(projectFile);
+  } catch {
+    throw new UserFacingError(vscode.l10n.t('The .NET CLI reported success, but {0} was not found.', projectFile));
+  }
+  const openProject = vscode.l10n.t('Open Project File');
+  const openFolder = vscode.l10n.t('Open Folder');
+  const addToWorkspace = vscode.l10n.t('Add to Workspace');
+  void vscode.window
+    .showInformationMessage(vscode.l10n.t('Created {0}. The original file was kept.', projectFile), openProject, openFolder, addToWorkspace)
+    .then(async (choice) => {
+      if (choice === openProject) {
+        await vscode.window.showTextDocument(vscode.Uri.file(projectFile));
+      } else if (choice === openFolder) {
+        await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(target), { forceNewWindow: true });
+      } else if (choice === addToWorkspace) {
+        vscode.workspace.updateWorkspaceFolders(vscode.workspace.workspaceFolders?.length ?? 0, 0, { uri: vscode.Uri.file(target) });
+      }
+    });
+  return outcome;
+}
+
+function readLastArgs(services: ToolkitServices): Record<string, string[]> {
+  const value = services.context.workspaceState.get<Record<string, string[]>>(LAST_ARGS_STATE_KEY, {});
+  return value && typeof value === 'object' ? value : {};
+}
+
+async function rememberArgs(services: ToolkitServices, uri: vscode.Uri, args: string[]): Promise<void> {
+  const all = { ...readLastArgs(services) };
+  delete all[uri.toString()];
+  all[uri.toString()] = args;
+  const keys = Object.keys(all);
+  for (const key of keys.slice(0, Math.max(0, keys.length - MAX_REMEMBERED_ARGS))) {
+    delete all[key];
+  }
+  await services.context.workspaceState.update(LAST_ARGS_STATE_KEY, all);
+}
+
+async function runWithArgs(services: ToolkitServices, arg: unknown): Promise<CommandOutcome> {
+  const { uri } = await resolveFileAppTarget(services, arg, 'run');
+  const previous = readLastArgs(services)[uri.toString()] ?? getSettings(uri).runArgs;
+  const value = await vscode.window.showInputBox({
+    title: vscode.l10n.t('Run {0} with Arguments', path.basename(uri.fsPath)),
+    prompt: vscode.l10n.t('Arguments passed to the app. Quote arguments that contain spaces ("a b" or \'a b\'); no shell expansion is performed.'),
+    placeHolder: '--name "Ada Lovelace" --count 3',
+    value: formatArgumentString(previous),
+    ignoreFocusOut: true,
+    validateInput: (input) => {
+      const parsed = parseArgumentString(input);
+      return parsed.ok ? undefined : vscode.l10n.t('Unterminated quote starting at column {0}.', String(parsed.position + 1));
+    },
+  });
+  if (value === undefined) {
+    throw new CancelledError();
+  }
+  const parsed = parseArgumentString(value);
+  if (!parsed.ok) {
+    throw new UserFacingError(vscode.l10n.t('Unterminated quote starting at column {0}.', String(parsed.position + 1)), [], 'warning');
+  }
+  await rememberArgs(services, uri, parsed.args);
+  return runFile(services, uri, parsed.args);
+}
+
+export function registerActionCommands(services: ToolkitServices): void {
+  registerCommand(services, COMMANDS.runFile, async (arg) => {
+    const { uri } = await resolveFileAppTarget(services, arg, 'run');
+    return runFile(services, uri, getSettings(uri).runArgs);
+  });
+  registerCommand(services, COMMANDS.runWithArgs, (arg) => runWithArgs(services, arg));
+  registerCommand(services, COMMANDS.restore, (arg) => simpleAction(services, arg, 'restore'));
+  registerCommand(services, COMMANDS.build, (arg) => simpleAction(services, arg, 'build'));
+  registerCommand(services, COMMANDS.clean, (arg) => simpleAction(services, arg, 'clean'));
+  registerCommand(services, COMMANDS.publish, (arg) => publish(services, arg));
+  registerCommand(services, COMMANDS.convertToProject, (arg) => convertToProject(services, arg));
+}

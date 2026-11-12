@@ -3,6 +3,7 @@ const esbuild = require('esbuild');
 
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
+const tests = process.argv.includes('--tests');
 
 /** @type {import('esbuild').Plugin} */
 const problemMatcherPlugin = {
@@ -24,6 +25,23 @@ const problemMatcherPlugin = {
 };
 
 async function main() {
+  if (tests) {
+    // Integration tests run inside the VS Code extension host and talk to the bundled extension
+    // through commands and its exported API only.
+    await esbuild.build({
+      entryPoints: ['test/integration/**/*.test.ts'],
+      outbase: 'test/integration',
+      outdir: 'out/test/integration',
+      bundle: true,
+      format: 'cjs',
+      sourcemap: true,
+      platform: 'node',
+      target: 'node20',
+      external: ['vscode', 'mocha'],
+      logLevel: 'warning',
+    });
+    return;
+  }
   const ctx = await esbuild.context({
     entryPoints: ['src/extension.ts'],
     bundle: true,

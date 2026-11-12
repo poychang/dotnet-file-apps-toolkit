@@ -1,0 +1,12 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build hello.cs (tasks.json)",
+      "type": "dotnet-file-app",
+      "action": "build",
+      "file": "hello.cs",
+      "problemMatcher": []
+    }
+  ]
+}

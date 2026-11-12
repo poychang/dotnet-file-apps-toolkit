@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { reportError, UserFacingError } from '../core/errors';
 import type { Logger } from '../core/logging';
+import type { DotnetCommandRunner } from '../dotnet/commandRunner';
 import type { FileAppDetector } from '../dotnet/fileAppDetector';
 import { FILE_APPS_DOCS_URL, sdkProbeError, type SdkService } from '../dotnet/sdkService';
 import { resolveTargetUri, validateLocalCSharpFile } from './target';
@@ -12,6 +13,7 @@ export interface ToolkitServices {
   readonly logger: Logger;
   readonly sdk: SdkService;
   readonly detector: FileAppDetector;
+  readonly runner: DotnetCommandRunner;
 }
 
 export const COMMANDS = {

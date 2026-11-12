@@ -1,12 +1,17 @@
 import * as vscode from 'vscode';
+import { registerActionCommands } from './commands/actions';
 import { COMMANDS, registerCommand, registerCoreCommands, type ToolkitServices } from './commands/registerCommands';
 import { UserFacingError } from './core/errors';
 import { Logger } from './core/logging';
+import { DotnetCommandRunner } from './dotnet/commandRunner';
 import { FileAppDetector } from './dotnet/fileAppDetector';
 import { SdkService } from './dotnet/sdkService';
+import { registerFileAppTaskProvider } from './dotnet/taskProvider';
+import { registerActionPicker } from './ui/actionPicker';
 
 export interface ToolkitApi {
   readonly detector: FileAppDetector;
+  readonly runner: DotnetCommandRunner;
 }
 
 export function activate(context: vscode.ExtensionContext): ToolkitApi {
@@ -16,29 +21,19 @@ export function activate(context: vscode.ExtensionContext): ToolkitApi {
 
   const sdk = new SdkService(logger);
   const detector = new FileAppDetector(context.workspaceState, logger);
-  context.subscriptions.push(sdk, detector);
+  const runner = new DotnetCommandRunner(logger);
+  context.subscriptions.push(sdk, detector, runner, registerFileAppTaskProvider(logger));
 
-  const services: ToolkitServices = { context, logger, sdk, detector };
+  const services: ToolkitServices = { context, logger, sdk, detector, runner };
   registerCoreCommands(services);
+  registerActionCommands(services);
+  registerActionPicker(services);
 
-  const notYetAvailable = () => {
+  registerCommand(services, COMMANDS.previewComments, () => {
     throw new UserFacingError(vscode.l10n.t('This command is not available yet.'), [], 'info');
-  };
-  for (const id of [
-    COMMANDS.runFile,
-    COMMANDS.runWithArgs,
-    COMMANDS.restore,
-    COMMANDS.build,
-    COMMANDS.clean,
-    COMMANDS.publish,
-    COMMANDS.convertToProject,
-    COMMANDS.showActions,
-    COMMANDS.previewComments,
-  ]) {
-    registerCommand(services, id, notYetAvailable);
-  }
+  });
 
-  return { detector };
+  return { detector, runner };
 }
 
 export function deactivate(): void {
