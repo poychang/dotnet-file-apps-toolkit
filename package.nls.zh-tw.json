@@ -2,7 +2,7 @@
   "displayName": ".NET File Apps Toolkit",
   "description": "執行、還原、轉換與預覽 .NET 10+ 檔案型應用程式（單一 .cs 檔），並可渲染 /*markdown、/*yaml、/*json 等語言標記註解。",
   "category": ".NET File Apps",
-  "capabilities.untrustedWorkspaces.description": "執行、建置、發佈或轉換檔案型應用程式會呼叫 .NET SDK，在受限模式下會停用。標記註解的醒目提示、暫留提示與預覽仍可使用。",
+  "capabilities.untrustedWorkspaces.description": "會啟動 .NET SDK 的命令（例如執行、建置、發佈、轉換與檢查 .NET SDK）在受限模式下會停用。標記註解的醒目提示、暫留提示與預覽仍可使用。",
   "capabilities.virtualWorkspaces.description": "檔案型應用程式命令需要具備 .NET SDK 的本機或遠端檔案系統。",
   "command.runFile": "執行檔案",
   "command.restore": "還原",

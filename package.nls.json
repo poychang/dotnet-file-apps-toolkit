@@ -2,7 +2,7 @@
   "displayName": ".NET File Apps Toolkit",
   "description": "Run, restore, convert and preview .NET 10+ file-based apps (single .cs files), with language-tagged comment rendering for /*markdown, /*yaml, /*json and more.",
   "category": ".NET File Apps",
-  "capabilities.untrustedWorkspaces.description": "Running, building, publishing or converting file-based apps executes the .NET SDK and is disabled in Restricted Mode. Tagged-comment highlighting, hover and preview remain available.",
+  "capabilities.untrustedWorkspaces.description": "Commands that start the .NET SDK, such as run, build, publish, convert and Check .NET SDK, are disabled in Restricted Mode. Tagged-comment highlighting, hover and preview remain available.",
   "capabilities.virtualWorkspaces.description": "File-based app commands require a local or remote file system with the .NET SDK.",
   "command.runFile": "Run File",
   "command.restore": "Restore",

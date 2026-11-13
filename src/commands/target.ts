@@ -22,6 +22,20 @@ export function resolveTargetUri(arg: unknown): vscode.Uri {
   throw new UserFacingError(vscode.l10n.t('Open a C# file (.cs) to use this command.'), [], 'info');
 }
 
+/**
+ * Blocks commands that start the .NET SDK in Restricted Mode. Even `dotnet --version` can run code
+ * from the folder, because a `global.json` with `sdk.paths` can select an SDK inside the workspace.
+ */
+export function requireWorkspaceTrust(commandTitle: string): void {
+  if (!vscode.workspace.isTrusted) {
+    throw new UserFacingError(
+      vscode.l10n.t('"{0}" runs the .NET SDK, which can execute code from this folder. Trust the workspace to use it.', commandTitle),
+      [{ title: vscode.l10n.t('Manage Workspace Trust'), run: () => vscode.commands.executeCommand('workbench.trust.manage') }],
+      'warning',
+    );
+  }
+}
+
 /** Validates that the target is an existing local `.cs` file and returns its URI. */
 export async function validateLocalCSharpFile(uri: vscode.Uri): Promise<vscode.Uri> {
   if (uri.scheme === 'untitled') {

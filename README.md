@@ -160,7 +160,7 @@ Additional notes:
 - Content on the same line as the closing `*/` is not included by the native injection grammar; the preview and decorations can still highlight it.
 - The .NET SDK/MSBuild currently rejects some special characters in source file names, including `;`, `%`, and `'`. Spaces and Unicode names are supported; shell metacharacters are passed without shell expansion.
 - Native AOT publishing needs a native toolchain (on Windows, Visual Studio's **Desktop development with C++** workload). Use `PublishAot=false` to avoid it.
-- Running, building, publishing, and converting execute the .NET SDK and are unavailable in Restricted Mode. Review and trust a workspace before running its code.
+- Every command that starts the .NET SDK, including run, build, publish, convert, pack, project references, format, cache cleanup, and **Check .NET SDK**, is unavailable in Restricted Mode. MSBuild files, and a `global.json` whose `sdk.paths` selects an SDK inside the folder, can run code from the workspace. Workspace values of `dotnetPath` and `run.args` are also ignored there. Review and trust a workspace before running its code.
 - The preview sanitizes rendered content and only allows remote images in a trusted workspace.
 
 ## Development
@@ -174,7 +174,7 @@ npm run test:integration
 npm run vsix
 ```
 
-Linux integration tests require a display server such as Xvfb.
+Linux integration tests require a display server such as Xvfb. `npm run test:integration` runs the main suite, then a separate suite in Restricted Mode with workspace trust enabled.
 
 ## License
 

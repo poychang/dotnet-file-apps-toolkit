@@ -30,7 +30,7 @@ import { analyzeFileAppText, type FileAppDirective } from '../dotnet/fileAppSign
 import { parseLaunchProfiles, type LaunchProfile } from '../dotnet/launchProfiles';
 import { COMMANDS, registerCommand, type ToolkitServices } from './registerCommands';
 import { registerTaggedCommentActions } from './taggedCommentActions';
-import { resolveTargetUri, validateLocalCSharpFile } from './target';
+import { requireWorkspaceTrust, resolveTargetUri, validateLocalCSharpFile } from './target';
 
 const LAST_ARGS_STATE_KEY = 'dotnetFileApps.lastArgs';
 const MAX_REMEMBERED_ARGS = 100;
@@ -80,15 +80,11 @@ async function resolveFileAppTarget(
   services: ToolkitServices,
   arg: unknown,
   action: DotnetAction,
-  requireWorkspaceTrust = true,
+  needsWorkspaceTrust = true,
 ): Promise<FileAppTarget> {
   const uri = await validateLocalCSharpFile(resolveTargetUri(arg));
-  if (requireWorkspaceTrust && !vscode.workspace.isTrusted) {
-    throw new UserFacingError(
-      vscode.l10n.t('"{0}" runs the .NET SDK, which can execute code from this folder. Trust the workspace to use it.', actionTitle(action)),
-      [{ title: vscode.l10n.t('Manage Workspace Trust'), run: () => vscode.commands.executeCommand('workbench.trust.manage') }],
-      'warning',
-    );
+  if (needsWorkspaceTrust) {
+    requireWorkspaceTrust(actionTitle(action));
   }
   const detection = await services.detector.detect(uri);
   if (detection.decision.isFileApp) {

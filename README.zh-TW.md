@@ -144,7 +144,7 @@ features:
 - 原生注入文法不會標記與結尾 `*/` 同一行的註解內容；預覽及裝飾仍可醒目提示該內容。
 - .NET SDK/MSBuild 目前不接受部分特殊檔名字元，包括 `;`、`%` 與 `'`。空格與 Unicode 檔名可用；shell 中繼字元會以不經 shell 展開的方式傳遞。
 - Native AOT 發佈需要原生工具鏈（Windows 需要 Visual Studio「使用 C++ 的桌面開發」工作負載）。可用 `PublishAot=false` 避免此需求。
-- 執行、建置、發佈與轉換會呼叫 .NET SDK，因此在受限模式下無法使用。執行程式碼前請先檢視並信任工作區。
+- 所有會啟動 .NET SDK 的命令（包括執行、建置、發佈、轉換、封裝工具、專案參考、格式化、快取清理與「**檢查 .NET SDK**」）在受限模式下都無法使用。MSBuild 檔案，以及以 `sdk.paths` 指向資料夾內 SDK 的 `global.json`，都可能執行工作區中的程式碼。受限模式下也會忽略工作區層級的 `dotnetPath` 與 `run.args` 設定。執行程式碼前請先檢視並信任工作區。
 - 預覽會清理渲染內容，且只有在受信任的工作區中才允許載入遠端圖片。
 
 ## 開發
@@ -158,7 +158,7 @@ npm run test:integration
 npm run vsix
 ```
 
-Linux 整合測試需要 Xvfb 等顯示伺服器。
+Linux 整合測試需要 Xvfb 等顯示伺服器。`npm run test:integration` 會先執行主要測試，再以啟用工作區信任的受限模式執行另一組測試。
 
 ## 授權
 

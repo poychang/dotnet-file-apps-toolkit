@@ -6,7 +6,7 @@ import type { Logger } from '../core/logging';
 import type { DotnetCommandRunner } from '../dotnet/commandRunner';
 import type { FileAppDetector } from '../dotnet/fileAppDetector';
 import { FILE_APPS_DOCS_URL, sdkProbeError, type SdkService } from '../dotnet/sdkService';
-import { resolveTargetUri, validateLocalCSharpFile } from './target';
+import { requireWorkspaceTrust, resolveTargetUri, validateLocalCSharpFile } from './target';
 import type { TaggedCommentService } from '../comments/taggedCommentService';
 
 export interface ToolkitServices {
@@ -63,6 +63,7 @@ export function registerCoreCommands(services: ToolkitServices): void {
   const { logger, sdk, detector } = services;
 
   registerCommand(services, COMMANDS.checkSdk, async (arg) => {
+    requireWorkspaceTrust(vscode.l10n.t('Check .NET SDK'));
     let cwd: string;
     let scope: vscode.Uri | undefined;
     let label: string;

@@ -29,9 +29,9 @@ async function main() {
     // Integration tests run inside the VS Code extension host and talk to the bundled extension
     // through commands and its exported API only.
     await esbuild.build({
-      entryPoints: ['test/integration/**/*.test.ts'],
-      outbase: 'test/integration',
-      outdir: 'out/test/integration',
+      entryPoints: ['test/integration/**/*.test.ts', 'test/restricted/**/*.ts'],
+      outbase: 'test',
+      outdir: 'out/test',
       bundle: true,
       format: 'cjs',
       sourcemap: true,
