@@ -4,7 +4,7 @@ import { escapeHtml } from './markdownRenderer';
 /**
  * Syntax highlighting for preview code blocks. Shiki tokenizes with VS Code's Light+ and Dark+ themes,
  * and colors are emitted as CSS classes (never inline styles) so the preview can keep a strict CSP.
- * Only the bundled MVP grammars are loaded; nothing is resolved from workspace content.
+ * Only the bundled supported grammars are loaded; nothing is resolved from workspace content.
  */
 
 const LIGHT_THEME = 'light-plus';
@@ -99,6 +99,16 @@ export class CodeHighlighter {
         import('@shikijs/langs/shellscript'),
         import('@shikijs/langs/powershell'),
         import('@shikijs/langs/csharp'),
+        import('@shikijs/langs/javascript'),
+        import('@shikijs/langs/typescript'),
+        import('@shikijs/langs/html'),
+        import('@shikijs/langs/css'),
+        import('@shikijs/langs/python'),
+        import('@shikijs/langs/cpp'),
+        import('@shikijs/langs/toml'),
+        import('@shikijs/langs/ini'),
+        import('@shikijs/langs/dockerfile'),
+        import('@shikijs/langs/csv'),
       ],
       themes: [import('@shikijs/themes/light-plus'), import('@shikijs/themes/dark-plus')],
       engine: createJavaScriptRegexEngine({ forgiving: true }),

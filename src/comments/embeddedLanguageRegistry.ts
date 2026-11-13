@@ -29,7 +29,7 @@ export interface EmbeddedLanguageDescriptor {
  */
 export const TAG_PATTERN = /[A-Za-z][A-Za-z0-9_.+#-]*/y;
 
-const MVP_LANGUAGES: readonly EmbeddedLanguageDescriptor[] = [
+const SUPPORTED_LANGUAGES: readonly EmbeddedLanguageDescriptor[] = [
   {
     id: 'markdown',
     displayName: 'Markdown',
@@ -102,6 +102,96 @@ const MVP_LANGUAGES: readonly EmbeddedLanguageDescriptor[] = [
     vscodeLanguageId: 'csharp',
     previewLanguage: 'csharp',
   },
+  {
+    id: 'javascript',
+    displayName: 'JavaScript',
+    aliases: ['js', 'cjs', 'mjs'],
+    mode: 'code',
+    grammarScope: 'source.js',
+    vscodeLanguageId: 'javascript',
+    previewLanguage: 'javascript',
+  },
+  {
+    id: 'typescript',
+    displayName: 'TypeScript',
+    aliases: ['ts', 'cts', 'mts'],
+    mode: 'code',
+    grammarScope: 'source.ts',
+    vscodeLanguageId: 'typescript',
+    previewLanguage: 'typescript',
+  },
+  {
+    id: 'html',
+    displayName: 'HTML',
+    aliases: ['htm'],
+    mode: 'code',
+    grammarScope: 'text.html.basic',
+    vscodeLanguageId: 'html',
+    previewLanguage: 'html',
+  },
+  {
+    id: 'css',
+    displayName: 'CSS',
+    aliases: [],
+    mode: 'code',
+    grammarScope: 'source.css',
+    vscodeLanguageId: 'css',
+    previewLanguage: 'css',
+  },
+  {
+    id: 'python',
+    displayName: 'Python',
+    aliases: ['py'],
+    mode: 'code',
+    grammarScope: 'source.python',
+    vscodeLanguageId: 'python',
+    previewLanguage: 'python',
+  },
+  {
+    id: 'cpp',
+    displayName: 'C++',
+    aliases: ['c++', 'cxx'],
+    mode: 'code',
+    grammarScope: 'source.cpp',
+    vscodeLanguageId: 'cpp',
+    previewLanguage: 'cpp',
+  },
+  {
+    id: 'toml',
+    displayName: 'TOML',
+    aliases: [],
+    mode: 'code',
+    grammarScope: 'source.toml',
+    vscodeLanguageId: 'toml',
+    previewLanguage: 'toml',
+  },
+  {
+    id: 'ini',
+    displayName: 'INI',
+    aliases: ['cfg', 'conf'],
+    mode: 'code',
+    grammarScope: 'source.ini',
+    vscodeLanguageId: 'ini',
+    previewLanguage: 'ini',
+  },
+  {
+    id: 'dockerfile',
+    displayName: 'Dockerfile',
+    aliases: ['docker'],
+    mode: 'code',
+    grammarScope: 'source.dockerfile',
+    vscodeLanguageId: 'dockerfile',
+    previewLanguage: 'docker',
+  },
+  {
+    id: 'csv',
+    displayName: 'CSV',
+    aliases: [],
+    mode: 'code',
+    grammarScope: 'text.csv',
+    vscodeLanguageId: 'csv',
+    previewLanguage: 'csv',
+  },
 ];
 
 export class EmbeddedLanguageRegistry {
@@ -130,4 +220,4 @@ export class EmbeddedLanguageRegistry {
   }
 }
 
-export const defaultRegistry = new EmbeddedLanguageRegistry(MVP_LANGUAGES);
+export const defaultRegistry = new EmbeddedLanguageRegistry(SUPPORTED_LANGUAGES);

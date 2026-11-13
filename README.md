@@ -98,8 +98,18 @@ Supported tags and aliases:
 | Bash | `bash`, `sh`, `shell` |
 | PowerShell | `powershell`, `ps1` |
 | C# | `csharp`, `cs` |
+| JavaScript | `javascript`, `js`, `cjs`, `mjs` |
+| TypeScript | `typescript`, `ts`, `cts`, `mts` |
+| HTML | `html`, `htm` |
+| CSS | `css` |
+| Python | `python`, `py` |
+| C++ | `cpp`, `c++`, `cxx` |
+| TOML | `toml` |
+| INI | `ini`, `cfg`, `conf` |
+| Dockerfile | `dockerfile`, `docker` |
+| CSV | `csv` |
 
-The preview renders Markdown and syntax-highlighted code. In the native C# editor, VS Code's TextMate injection grammar provides embedded scopes. Depending on the active C# semantic-highlighting provider and theme, color decorations may be used to restore code colors.
+The preview renders Markdown and syntax-highlighted code using bundled grammars for all listed code tags. In the native C# editor, VS Code's TextMate injection grammar provides embedded scopes when the corresponding language grammar is installed. Depending on the active C# semantic-highlighting provider and theme, color decorations may be used to restore code colors.
 
 ## Settings
 

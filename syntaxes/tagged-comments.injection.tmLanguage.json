@@ -25,6 +25,36 @@
     },
     {
       "include": "#tagged-csharp"
+    },
+    {
+      "include": "#tagged-javascript"
+    },
+    {
+      "include": "#tagged-typescript"
+    },
+    {
+      "include": "#tagged-html"
+    },
+    {
+      "include": "#tagged-css"
+    },
+    {
+      "include": "#tagged-python"
+    },
+    {
+      "include": "#tagged-cpp"
+    },
+    {
+      "include": "#tagged-toml"
+    },
+    {
+      "include": "#tagged-ini"
+    },
+    {
+      "include": "#tagged-dockerfile"
+    },
+    {
+      "include": "#tagged-csv"
     }
   ],
   "repository": {
@@ -233,6 +263,306 @@
           "patterns": [
             {
               "include": "source.cs"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-javascript": {
+      "name": "comment.block.tagged.javascript.cs",
+      "begin": "(/\\*)((?i:javascript|js|cjs|mjs))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.javascript",
+          "patterns": [
+            {
+              "include": "source.js"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-typescript": {
+      "name": "comment.block.tagged.typescript.cs",
+      "begin": "(/\\*)((?i:typescript|ts|cts|mts))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.typescript",
+          "patterns": [
+            {
+              "include": "source.ts"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-html": {
+      "name": "comment.block.tagged.html.cs",
+      "begin": "(/\\*)((?i:html|htm))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.html",
+          "patterns": [
+            {
+              "include": "text.html.basic"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-css": {
+      "name": "comment.block.tagged.css.cs",
+      "begin": "(/\\*)((?i:css))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.css",
+          "patterns": [
+            {
+              "include": "source.css"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-python": {
+      "name": "comment.block.tagged.python.cs",
+      "begin": "(/\\*)((?i:python|py))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.python",
+          "patterns": [
+            {
+              "include": "source.python"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-cpp": {
+      "name": "comment.block.tagged.cpp.cs",
+      "begin": "(/\\*)((?i:cpp|cxx|c\\+\\+))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.cpp",
+          "patterns": [
+            {
+              "include": "source.cpp"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-toml": {
+      "name": "comment.block.tagged.toml.cs",
+      "begin": "(/\\*)((?i:toml))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.toml",
+          "patterns": [
+            {
+              "include": "source.toml"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-ini": {
+      "name": "comment.block.tagged.ini.cs",
+      "begin": "(/\\*)((?i:ini|cfg|conf))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.ini",
+          "patterns": [
+            {
+              "include": "source.ini"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-dockerfile": {
+      "name": "comment.block.tagged.dockerfile.cs",
+      "begin": "(/\\*)((?i:dockerfile|docker))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.dockerfile",
+          "patterns": [
+            {
+              "include": "source.dockerfile"
+            }
+          ]
+        }
+      ]
+    },
+    "tagged-csv": {
+      "name": "comment.block.tagged.csv.cs",
+      "begin": "(/\\*)((?i:csv))[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.comment.cs"
+        },
+        "2": {
+          "name": "keyword.other.language-tag.cs"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.cs"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(^|\\G)(?!.*\\*/)",
+          "while": "(^|\\G)(?!.*\\*/)",
+          "contentName": "meta.tagged-comment.content.csv",
+          "patterns": [
+            {
+              "include": "text.csv"
             }
           ]
         }

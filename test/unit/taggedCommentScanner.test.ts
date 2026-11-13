@@ -20,11 +20,20 @@ describe('EmbeddedLanguageRegistry', () => {
       ['shell', 'bash'],
       ['ps1', 'powershell'],
       ['cs', 'csharp'],
+      ['JS', 'javascript'],
+      ['mjs', 'javascript'],
+      ['TS', 'typescript'],
+      ['htm', 'html'],
+      ['py', 'python'],
+      ['C++', 'cpp'],
+      ['cxx', 'cpp'],
+      ['cfg', 'ini'],
+      ['docker', 'dockerfile'],
     ];
     for (const [tag, id] of cases) {
       assert.equal(defaultRegistry.resolve(tag)?.id, id, tag);
     }
-    for (const tag of ['markdownExtra', 'javascript', 'html', 'todo', '']) {
+    for (const tag of ['markdownExtra', 'todo', '']) {
       assert.equal(defaultRegistry.resolve(tag), undefined, tag);
     }
   });

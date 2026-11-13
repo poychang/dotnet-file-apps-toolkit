@@ -70,17 +70,36 @@ describe('code highlighting and preview HTML', function () {
     highlighter = await CodeHighlighter.create();
   });
 
-  it('loads the MVP preview grammars and emits class-based colors', () => {
-    for (const lang of ['yaml', 'json', 'sql', 'xml', 'shellscript', 'powershell', 'csharp']) {
+  it('loads the supported preview grammars and emits class-based colors', () => {
+    for (const lang of [
+      'yaml',
+      'json',
+      'sql',
+      'xml',
+      'shellscript',
+      'powershell',
+      'csharp',
+      'javascript',
+      'typescript',
+      'html',
+      'css',
+      'python',
+      'cpp',
+      'toml',
+      'ini',
+      'docker',
+      'csv',
+    ]) {
       assert.equal(highlighter.supports(lang), true, lang);
     }
-    assert.equal(highlighter.supports('python'), false);
+    assert.equal(highlighter.supports('not-a-supported-language'), false);
     const lines = highlighter.tokenize('port: 8080 # <b>', 'yaml')!;
     const classed = lines[0].filter((t) => t.classes);
     assert.ok(classed.length >= 3);
     assert.ok(classed.every((t) => /^(l\d+ ?|d\d+ ?|f[ibu] ?)+$/.test(t.classes)), JSON.stringify(classed));
     assert.match(highlighter.css, /body\.vscode-light \.l0/);
     assert.match(highlighter.highlightToHtml('<a/>', 'xml')!, /&#60;/);
+    assert.ok(highlighter.highlightToHtml('const x: number = 1;', 'typescript')!.includes('class='));
   });
 
   it('renders each block with its own strategy and source line numbers', () => {
