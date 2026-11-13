@@ -2,7 +2,7 @@ import * as assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import * as vscode from 'vscode';
 import type { ToolkitApi } from '../../src/extension';
-import { activateExtension, fixtureUri, UiStub, waitFor } from './helpers';
+import { activateExtension, fixtureUri, restoreDocumentFromDisk, UiStub, waitFor } from './helpers';
 
 const SECTION = 'dotnetFileAppsToolkit';
 
@@ -186,16 +186,18 @@ describe('Tagged comments', function () {
     const before = await waitFor(() => preview.snapshot, 10_000, 'snapshot');
     assert.equal(before.blocks.length, 3);
 
-    await editor.edit((b) => b.insert(new vscode.Position(editor.document.lineCount, 0), '\n/*xml\n<added />\n*/\n'));
-    const after = await waitFor(
-      () => (preview.snapshot && preview.snapshot.blocks.length === 4 ? preview.snapshot : undefined),
-      10_000,
-      'preview refresh',
-    );
-    assert.equal(after.blocks[3].language, 'xml');
-    await vscode.window.showTextDocument(editor.document, vscode.ViewColumn.One);
-    await vscode.commands.executeCommand('workbench.action.files.revert');
-    await waitFor(() => (preview.snapshot?.blocks.length === 3 ? true : undefined), 10_000, 'preview after revert');
+    try {
+      await editor.edit((b) => b.insert(new vscode.Position(editor.document.lineCount, 0), '\n/*xml\n<added />\n*/\n'));
+      const after = await waitFor(
+        () => (preview.snapshot && preview.snapshot.blocks.length === 4 ? preview.snapshot : undefined),
+        10_000,
+        'preview refresh',
+      );
+      assert.equal(after.blocks[3].language, 'xml');
+    } finally {
+      await restoreDocumentFromDisk(editor.document);
+    }
+    await waitFor(() => (preview.snapshot?.blocks.length === 3 ? true : undefined), 10_000, 'preview after restore');
   });
 
   it('reports unknown tags only when the diagnostic is enabled', async () => {

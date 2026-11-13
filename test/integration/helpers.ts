@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { ToolkitApi } from '../../src/extension';
+import { promises as fs } from 'node:fs';
 
 export const EXTENSION_ID = 'poychang.dotnet-file-apps-toolkit';
 
@@ -22,6 +23,16 @@ export async function activateExtension(): Promise<ToolkitApi> {
     throw new Error(`Extension ${EXTENSION_ID} not found.`);
   }
   return ext.activate();
+}
+
+export async function restoreDocumentFromDisk(document: vscode.TextDocument): Promise<void> {
+  const contents = await fs.readFile(document.uri.fsPath, 'utf8');
+  const editor = await vscode.window.showTextDocument(document);
+  const range = new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length));
+  const edited = await editor.edit((builder) => builder.replace(range, contents));
+  if (!edited || !(await document.save())) {
+    throw new Error(`Could not restore ${document.uri.fsPath} from disk.`);
+  }
 }
 
 export async function waitFor<T>(probe: () => T | undefined | Promise<T | undefined>, timeoutMs = 15_000, what = 'condition'): Promise<T> {
