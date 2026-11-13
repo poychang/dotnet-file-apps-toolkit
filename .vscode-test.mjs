@@ -17,7 +17,11 @@ export default defineConfig({
   ...(process.env.VSCODE_TEST_EXECUTABLE
     ? { useInstallation: { fromPath: process.env.VSCODE_TEST_EXECUTABLE } }
     : { version: process.env.VSCODE_TEST_VERSION ?? 'stable' }),
-  launchArgs: ['--disable-extensions', '--disable-workspace-trust'],
+  launchArgs: [
+    '--disable-extensions',
+    '--disable-workspace-trust',
+    ...(process.platform === 'darwin' ? [`--user-data-dir=/tmp/dfat-${process.pid}`] : []),
+  ],
   env: { DOTNET_FILE_APPS_IT_WORKSPACE: workspaceFolder },
   mocha: { ui: 'bdd', timeout: 300_000, color: true },
 });
