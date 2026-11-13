@@ -36,6 +36,8 @@ Use the editor title actions, Command Palette (`.NET File Apps`), or the command
 | Pack as Tool | Package the file as a .NET tool; `#:property PackAsTool=false` disables this action |
 | Clean File-Based App Cache… | Confirm and remove cached artifacts unused for at least 30 days by default |
 | Manage File-Based App Directives… | Add/update `#:package` references or inspect/edit existing `#:sdk`, `#:property`, `#:project`, and `#:include` directives |
+| Manage Project References… | List, add, or remove `#:project` references with the .NET 11 SDK or later |
+| Format File… | Format the file-based app with the .NET formatter (requires .NET 11 SDK or later) |
 | Convert to Project… | Create a project folder and keep the original file unchanged |
 | Check .NET SDK | Show the SDK selected for the file's folder |
 | More Actions… | Open the file's action picker |

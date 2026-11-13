@@ -132,6 +132,16 @@
         "category": "%category%"
       },
       {
+        "command": "dotnetFileApps.manageProjectReferences",
+        "title": "%command.manageProjectReferences%",
+        "category": "%category%"
+      },
+      {
+        "command": "dotnetFileApps.formatFile",
+        "title": "%command.formatFile%",
+        "category": "%category%"
+      },
+      {
         "command": "dotnetFileApps.checkSdk",
         "title": "%command.checkSdk%",
         "category": "%category%"
@@ -283,6 +293,14 @@
         },
         {
           "command": "dotnetFileApps.manageDirectives",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.manageProjectReferences",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.formatFile",
           "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
         },
         {

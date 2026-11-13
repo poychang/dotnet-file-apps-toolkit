@@ -3,8 +3,10 @@ import * as path from 'node:path';
 import {
   buildConvertArgs,
   buildFileAppCacheCleanArgs,
+  buildFormatArgs,
   buildPackArgs,
   buildPublishArgs,
+  buildReferenceArgs,
   buildRunArgs,
   convertedProjectFile,
   defaultConvertOutputDir,
@@ -50,6 +52,26 @@ describe('cliArgs', () => {
     for (const days of [-1, 1.5, Number.MAX_SAFE_INTEGER]) {
       assert.throws(() => buildFileAppCacheCleanArgs(days), RangeError);
     }
+  });
+
+  it('builds project reference and file-app format arguments without shell quoting', () => {
+    assert.deepEqual(buildReferenceArgs('add', '/w/app.cs', ['/w/lib project/lib.csproj']), [
+      'reference',
+      'add',
+      '/w/lib project/lib.csproj',
+      '--file',
+      '/w/app.cs',
+    ]);
+    assert.deepEqual(buildReferenceArgs('list', '/w/app.cs'), ['reference', 'list', '--file', '/w/app.cs']);
+    assert.deepEqual(buildReferenceArgs('remove', '/w/app.cs', ['/w/lib.csproj']), [
+      'reference',
+      'remove',
+      '/w/lib.csproj',
+      '--file',
+      '/w/app.cs',
+    ]);
+    assert.deepEqual(buildFormatArgs('/w/app file.cs'), ['format', '/w/app file.cs']);
+    assert.throws(() => buildReferenceArgs('add', '/w/app.cs'), RangeError);
   });
 
   it('computes the documented default convert and publish folders', () => {

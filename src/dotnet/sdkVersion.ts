@@ -102,6 +102,8 @@ export interface SdkCapabilities {
   readonly includeDllDirective: boolean;
   /** `dotnet reference add/list/remove --file`. */
   readonly referenceFileCommands: boolean;
+  /** `dotnet format <file.cs>` for file-based apps. */
+  readonly fileBasedAppFormat: boolean;
   /** True when the SDK is a prerelease build; features may be incomplete. */
   readonly prerelease: boolean;
 }
@@ -117,6 +119,7 @@ export function getSdkCapabilities(v: SdkVersion): SdkCapabilities {
     includeDirective: v.major >= 11 || coreAtLeast(v, 10, 0, 300),
     includeDllDirective: v.major >= 11,
     referenceFileCommands: v.major >= 11,
+    fileBasedAppFormat: v.major >= 11,
     prerelease: v.prerelease.length > 0,
   };
 }

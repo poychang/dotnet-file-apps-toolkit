@@ -8,8 +8,10 @@ import {
   buildCleanArgs,
   buildConvertArgs,
   buildFileAppCacheCleanArgs,
+  buildFormatArgs,
   buildPackArgs,
   buildPublishArgs,
+  buildReferenceArgs,
   buildRestoreArgs,
   buildRunArgs,
   convertedProjectFile,
@@ -47,6 +49,10 @@ function actionTitle(action: DotnetAction): string {
       return vscode.l10n.t('Publish');
     case 'pack':
       return vscode.l10n.t('Pack as Tool');
+    case 'reference':
+      return vscode.l10n.t('Manage Project References');
+    case 'format':
+      return vscode.l10n.t('Format File');
     case 'convert':
       return vscode.l10n.t('Convert');
   }
@@ -698,6 +704,178 @@ async function applyDirectiveEdit(
   }
 }
 
+interface ReferenceActionItem extends vscode.QuickPickItem {
+  readonly action: 'list' | 'add' | 'remove';
+}
+
+async function manageProjectReferences(services: ToolkitServices, arg: unknown): Promise<CommandOutcome | undefined> {
+  const { uri } = await resolveFileAppTarget(services, arg, 'reference');
+  const sdk = await services.sdk.require(uri);
+  if (!sdk.capabilities.referenceFileCommands) {
+    throw new UserFacingError(vscode.l10n.t('Project reference commands for file-based apps require the .NET 11 SDK or later.'), [], 'warning');
+  }
+  const actions: ReferenceActionItem[] = [
+    { label: vscode.l10n.t('List Project References'), action: 'list' },
+    { label: vscode.l10n.t('Add Project Reference…'), action: 'add' },
+    { label: vscode.l10n.t('Remove Project Reference…'), action: 'remove' },
+  ];
+  const selected = await vscode.window.showQuickPick(actions, {
+    title: vscode.l10n.t('Manage Project References'),
+    placeHolder: vscode.l10n.t('Select a project reference action'),
+  });
+  if (!selected) {
+    throw new CancelledError();
+  }
+  if (selected.action === 'list') {
+    const outcome = await runReferenceCommand(services, uri, sdk.dotnetPath, 'list');
+    const output = outcome.output?.trim();
+    void vscode.window.showInformationMessage(
+      output || vscode.l10n.t('No project references are configured for {0}.', path.basename(uri.fsPath)),
+    );
+    return outcome;
+  }
+  if (selected.action === 'add') {
+    const projectUris = await vscode.window.showOpenDialog({
+      canSelectFiles: true,
+      canSelectFolders: false,
+      canSelectMany: true,
+      openLabel: vscode.l10n.t('Add Reference'),
+      filters: { [vscode.l10n.t('C# Project')]: ['csproj'] },
+    });
+    if (!projectUris || projectUris.length === 0) {
+      throw new CancelledError();
+    }
+    const projectPaths = projectUris.map((projectUri) => projectUri.fsPath);
+    const addLabel = vscode.l10n.t('Add Reference');
+    const choice = await vscode.window.showWarningMessage(
+      vscode.l10n.t('Add project references to {0}?', path.basename(uri.fsPath)),
+      {
+        modal: true,
+        detail: projectPaths.join('\n'),
+      },
+      addLabel,
+    );
+    if (choice !== addLabel) {
+      throw new CancelledError();
+    }
+    return runReferenceCommand(services, uri, sdk.dotnetPath, 'add', projectPaths);
+  }
+
+  await ensureSaved(uri, getSettings(uri).autoSaveBeforeRun, 'reference');
+  const document = await vscode.workspace.openTextDocument(uri);
+  const version = document.version;
+  const source = await fs.readFile(uri.fsPath, 'utf8');
+  const references = analyzeFileAppText(source).directives.filter((directive) => directive.name === 'project');
+  if (references.length === 0) {
+    void vscode.window.showInformationMessage(vscode.l10n.t('No project references are configured for {0}.', path.basename(uri.fsPath)));
+    return undefined;
+  }
+  const picked = await vscode.window.showQuickPick(
+    references.map((directive) => ({
+      label: directive.value,
+      description: vscode.l10n.t('Line {0}', String(document.positionAt(directive.start).line + 1)),
+      directive,
+    })),
+    {
+      title: vscode.l10n.t('Remove Project Reference'),
+      placeHolder: vscode.l10n.t('Select a project reference to remove'),
+      matchOnDescription: true,
+    },
+  );
+  if (!picked) {
+    throw new CancelledError();
+  }
+  const removeLabel = vscode.l10n.t('Remove Reference');
+  const choice = await vscode.window.showWarningMessage(
+    vscode.l10n.t('Remove project reference {0}?', picked.directive.value),
+    { modal: true, detail: path.basename(uri.fsPath) },
+    removeLabel,
+  );
+  if (choice !== removeLabel) {
+    throw new CancelledError();
+  }
+  if (document.version !== version) {
+    throw new UserFacingError(
+      vscode.l10n.t('The file changed while you were selecting a project reference. Run the command again.'),
+      [],
+      'warning',
+    );
+  }
+  return runReferenceCommand(services, uri, sdk.dotnetPath, 'remove', [picked.directive.value]);
+}
+
+async function runReferenceCommand(
+  services: ToolkitServices,
+  uri: vscode.Uri,
+  dotnetPath: string,
+  operation: 'add' | 'list' | 'remove',
+  projects: readonly string[] = [],
+): Promise<CommandOutcome> {
+  await ensureSaved(uri, getSettings(uri).autoSaveBeforeRun, 'reference');
+  const operationName =
+    operation === 'add'
+      ? vscode.l10n.t('Add Project References')
+      : operation === 'list'
+        ? vscode.l10n.t('List Project References')
+        : vscode.l10n.t('Remove Project References');
+  const progressTitle =
+    operation === 'add'
+      ? vscode.l10n.t('Adding Project References…')
+      : operation === 'list'
+        ? vscode.l10n.t('Listing Project References…')
+        : vscode.l10n.t('Removing Project References…');
+  const command: DotnetCommand = {
+    action: 'reference',
+    fileUri: uri,
+    dotnetPath,
+    args: buildReferenceArgs(operation, uri.fsPath, projects),
+    name: operationName,
+    presentation: 'captured',
+  };
+  const outcome = await execute(services, command, progressTitle);
+  ensureSucceeded(outcome, command.name);
+  if (operation === 'add') {
+    void vscode.window.showInformationMessage(
+      vscode.l10n.t('Added project references to {0}.', path.basename(uri.fsPath)),
+    );
+  } else if (operation === 'remove') {
+    void vscode.window.showInformationMessage(
+      vscode.l10n.t('Removed project references from {0}.', path.basename(uri.fsPath)),
+    );
+  }
+  return outcome;
+}
+
+async function formatFile(services: ToolkitServices, arg: unknown): Promise<CommandOutcome> {
+  const { uri } = await resolveFileAppTarget(services, arg, 'format');
+  const sdk = await services.sdk.require(uri);
+  if (!sdk.capabilities.fileBasedAppFormat) {
+    throw new UserFacingError(vscode.l10n.t('Formatting file-based apps requires the .NET 11 SDK or later.'), [], 'warning');
+  }
+  const formatLabel = vscode.l10n.t('Format');
+  const choice = await vscode.window.showWarningMessage(
+    vscode.l10n.t('Format {0}?', path.basename(uri.fsPath)),
+    { modal: true, detail: vscode.l10n.t('The .NET formatter will modify this source file.') },
+    formatLabel,
+  );
+  if (choice !== formatLabel) {
+    throw new CancelledError();
+  }
+  await ensureSaved(uri, getSettings(uri).autoSaveBeforeRun, 'format');
+  const command: DotnetCommand = {
+    action: 'format',
+    fileUri: uri,
+    dotnetPath: sdk.dotnetPath,
+    args: buildFormatArgs(uri.fsPath),
+    name: taskName('format', uri),
+    presentation: 'captured',
+  };
+  const outcome = await execute(services, command, vscode.l10n.t('Formatting {0}…', path.basename(uri.fsPath)));
+  ensureSucceeded(outcome, command.name);
+  void vscode.window.showInformationMessage(vscode.l10n.t('Formatted {0}.', path.basename(uri.fsPath)));
+  return outcome;
+}
+
 async function runWithProfile(services: ToolkitServices, arg: unknown): Promise<CommandOutcome> {
   const { uri } = await resolveFileAppTarget(services, arg, 'run');
   const profiles = await launchProfiles(uri.fsPath);
@@ -792,6 +970,8 @@ export function registerActionCommands(services: ToolkitServices): void {
   registerCommand(services, COMMANDS.runWithArgs, (arg) => runWithArgs(services, arg));
   registerCommand(services, COMMANDS.runWithProfile, (arg) => runWithProfile(services, arg));
   registerCommand(services, COMMANDS.manageDirectives, (arg) => manageDirectives(services, arg));
+  registerCommand(services, COMMANDS.manageProjectReferences, (arg) => manageProjectReferences(services, arg));
+  registerCommand(services, COMMANDS.formatFile, (arg) => formatFile(services, arg));
   registerCommand(services, COMMANDS.restore, (arg) => simpleAction(services, arg, 'restore'));
   registerCommand(services, COMMANDS.build, (arg) => simpleAction(services, arg, 'build'));
   registerCommand(services, COMMANDS.clean, (arg) => simpleAction(services, arg, 'clean'));

@@ -29,6 +29,8 @@ export function buildActionItems(isFileApp: boolean, running: string | undefined
     item('package', vscode.l10n.t('Pack as Tool'), COMMANDS.packAsTool, 'dotnet pack'),
     item('clear-all', vscode.l10n.t('Clean File-Based App Cache…'), COMMANDS.cleanFileAppCache, 'dotnet clean file-based-apps'),
     item('edit', vscode.l10n.t('Manage File-Based App Directives…'), COMMANDS.manageDirectives),
+    item('references', vscode.l10n.t('Manage Project References…'), COMMANDS.manageProjectReferences, 'dotnet reference --file'),
+    item('symbol-operator', vscode.l10n.t('Format File…'), COMMANDS.formatFile, 'dotnet format <file.cs>'),
     item('project', vscode.l10n.t('Convert to Project…'), COMMANDS.convertToProject, 'dotnet project convert'),
     separator(vscode.l10n.t('Comments')),
     item('open-preview', vscode.l10n.t('Preview Tagged Comments'), COMMANDS.previewComments),

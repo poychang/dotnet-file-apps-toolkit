@@ -29,6 +29,8 @@ export const COMMANDS = {
   packAsTool: 'dotnetFileApps.packAsTool',
   cleanFileAppCache: 'dotnetFileApps.cleanFileAppCache',
   manageDirectives: 'dotnetFileApps.manageDirectives',
+  manageProjectReferences: 'dotnetFileApps.manageProjectReferences',
+  formatFile: 'dotnetFileApps.formatFile',
   convertToProject: 'dotnetFileApps.convertToProject',
   previewComments: 'dotnetFileApps.previewComments',
   copyTaggedComment: 'dotnetFileApps.copyTaggedComment',
@@ -86,6 +88,7 @@ export function registerCoreCommands(services: ToolkitServices): void {
     const features = [
       caps.includeDirective ? '#:include' : undefined,
       caps.referenceFileCommands ? 'dotnet reference --file' : undefined,
+      caps.fileBasedAppFormat ? 'dotnet format <file.cs>' : undefined,
     ].filter(Boolean);
     const message = vscode.l10n.t(
       '.NET SDK {0} is used for {1}. File-based apps are supported{2}.',

@@ -34,11 +34,13 @@ describe('sdkVersion', () => {
     assert.equal(ten.fileBasedApps, true);
     assert.equal(ten.includeDirective, false);
     assert.equal(ten.referenceFileCommands, false);
+    assert.equal(ten.fileBasedAppFormat, false);
     assert.equal(getSdkCapabilities(v('10.0.300')).includeDirective, true);
     assert.equal(getSdkCapabilities(v('10.0.300')).includeDllDirective, false);
     const eleven = getSdkCapabilities(v('11.0.100'));
     assert.equal(eleven.includeDllDirective, true);
     assert.equal(eleven.referenceFileCommands, true);
+    assert.equal(eleven.fileBasedAppFormat, true);
     assert.equal(getSdkCapabilities(v('10.0.100-rc.1.25451.107')).prerelease, true);
   });
 });

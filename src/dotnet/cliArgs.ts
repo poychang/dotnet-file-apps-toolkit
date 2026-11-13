@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 import type { FileAppDirective } from './fileAppSignals';
 
-export type DotnetAction = 'run' | 'restore' | 'build' | 'clean' | 'publish' | 'pack' | 'convert';
+export type DotnetAction = 'run' | 'restore' | 'build' | 'clean' | 'publish' | 'pack' | 'reference' | 'format' | 'convert';
 
 /** `dotnet run --file <file> [-- <appArgs...>]`. `--file` prevents a project in the cwd from being run instead. */
 export function buildRunArgs(file: string, appArgs: readonly string[] = [], launchProfile?: string): string[] {
@@ -40,6 +40,22 @@ export function buildFileAppCacheCleanArgs(days: number): string[] {
     throw new RangeError('Cache retention days must be a non-negative 32-bit integer.');
   }
   return ['clean', 'file-based-apps', '--days', String(days)];
+}
+
+export type ReferenceOperation = 'add' | 'list' | 'remove';
+
+export function buildReferenceArgs(operation: ReferenceOperation, file: string, projects: readonly string[] = []): string[] {
+  if (operation === 'list') {
+    return ['reference', 'list', '--file', file];
+  }
+  if (projects.length === 0) {
+    throw new RangeError(`At least one project path is required for reference ${operation}.`);
+  }
+  return ['reference', operation, ...projects, '--file', file];
+}
+
+export function buildFormatArgs(file: string): string[] {
+  return ['format', file];
 }
 
 export function buildConvertArgs(file: string, outputDir?: string): string[] {

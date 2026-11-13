@@ -1,4 +1,5 @@
 import * as assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { existsSync, promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
@@ -117,6 +118,61 @@ describe('CLI actions (requires .NET SDK 10+)', function () {
   it('packs a file-based app as a tool', async () => {
     const outcome = await vscode.commands.executeCommand<Outcome>('dotnetFileApps.packAsTool', fixtureUri('hello.cs'));
     assertSucceeded(outcome);
+    assert.deepEqual(ui.errors(), []);
+  });
+
+  it('lists, adds, and removes project references with the .NET 11 SDK', async function () {
+    const appDir = path.join(workspaceDir(), 'reference-app');
+    const appFile = path.join(appDir, 'reference-app.cs');
+    const projectFile = path.join(appDir, 'library', 'library.csproj');
+    await fs.mkdir(path.dirname(projectFile), { recursive: true });
+    await fs.writeFile(appFile, '#:property PublishAot=false\nConsole.WriteLine("references");\n');
+    await fs.writeFile(
+      projectFile,
+      '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>\n',
+    );
+    const uri = vscode.Uri.file(appFile);
+    const sdkVersion = execFileSync('dotnet', ['--version'], { cwd: appDir, encoding: 'utf8' }).trim();
+    if (Number(sdkVersion.split('.')[0]) < 11) {
+      this.skip();
+    }
+
+    const hasAction = (item: vscode.QuickPickItem, action: string) => 'action' in item && item.action === action;
+    ui.pick = (items) => items.find((item) => hasAction(item, 'add'));
+    ui.openFiles = () => [vscode.Uri.file(projectFile)];
+    ui.respond = (message) => (message.modal ? message.items[0] : undefined);
+    const add = await vscode.commands.executeCommand<Outcome>('dotnetFileApps.manageProjectReferences', uri);
+    assertSucceeded(add);
+    assert.match(await fs.readFile(appFile, 'utf8'), /#:project .*library\.csproj/);
+
+    ui.reset();
+    ui.pick = (items) => items.find((item) => hasAction(item, 'list'));
+    const list = await vscode.commands.executeCommand<Outcome>('dotnetFileApps.manageProjectReferences', uri);
+    assertSucceeded(list);
+    assert.ok(ui.messages.some((message) => message.kind === 'info' && message.message.includes('library.csproj')));
+
+    ui.reset();
+    ui.pick = (items) =>
+      items.find((item) => hasAction(item, 'remove')) ?? items.find((item) => item.label.includes('library.csproj'));
+    ui.respond = (message) => (message.modal ? message.items[0] : undefined);
+    const remove = await vscode.commands.executeCommand<Outcome>('dotnetFileApps.manageProjectReferences', uri);
+    assertSucceeded(remove);
+    assert.doesNotMatch(await fs.readFile(appFile, 'utf8'), /#:project .*library\.csproj/);
+    assert.deepEqual(ui.errors(), []);
+  });
+
+  it('formats a file-based app with the .NET 11 SDK after confirmation', async function () {
+    const appFile = path.join(workspaceDir(), 'format-app.cs');
+    await fs.writeFile(appFile, '#:property PublishAot=false\nConsole.WriteLine(  "format" );\n');
+    const uri = vscode.Uri.file(appFile);
+    const sdkVersion = execFileSync('dotnet', ['--version'], { cwd: workspaceDir(), encoding: 'utf8' }).trim();
+    if (Number(sdkVersion.split('.')[0]) < 11) {
+      this.skip();
+    }
+    ui.respond = (message) => (message.modal && message.items.includes('Format') ? 'Format' : undefined);
+    const outcome = await vscode.commands.executeCommand<Outcome>('dotnetFileApps.formatFile', uri);
+    assertSucceeded(outcome);
+    assert.match(await fs.readFile(appFile, 'utf8'), /Console\.WriteLine\("format"\);/);
     assert.deepEqual(ui.errors(), []);
   });
 

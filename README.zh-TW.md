@@ -36,6 +36,8 @@ Console.WriteLine("Hello from a file-based app!");
 | 封裝為工具 | 將檔案封裝為 .NET 工具；`#:property PackAsTool=false` 會停用此動作 |
 | 清理檔案型應用程式快取… | 確認後清理至少 30 天未使用的快取產物（預設值） |
 | 管理檔案型應用程式指示詞… | 新增／更新 `#:package`，並檢視／編輯現有的 `#:sdk`、`#:property`、`#:project` 與 `#:include` 指示詞 |
+| 管理專案參考… | 使用 .NET 11 SDK 或更新版本列出、新增或移除 `#:project` 參考 |
+| 格式化檔案… | 使用 .NET 格式化工具格式化檔案型應用程式（需要 .NET 11 SDK 或更新版本） |
 | 轉換為專案… | 建立專案資料夾並保留原始檔案 |
 | 檢查 .NET SDK | 顯示此檔案資料夾所選用的 SDK |
 | 更多動作… | 開啟檔案動作選單 |
