@@ -412,14 +412,16 @@ Avoid adding a required dependency on C# Dev Kit; integrate when present but kee
 
 ### P4 — Post-MVP enhancements
 
-- [ ] Add more mainstream languages: JS/TS, HTML, CSS, Python, C++, TOML, INI, Dockerfile and CSV.
-- [ ] Optional YAML/JSON validation and structure previews (opt-in only).
-- [ ] Optional code snippet actions (copy-to-clipboard, extract-to-file with confirmation); **never execute embedded comment content**.
-- [ ] Pack as Tool, cache cleanup with confirmation, launch profile picker.
-- [ ] Add/update `#:package`, and inspect/edit `#:sdk`, `#:property`, `#:project`, `#:include`.
-- [ ] .NET 11 SDK-gated project reference actions and optional format command.
-- [ ] Optional CodeLens near file entry point or tagged comments, with settings to avoid clutter.
-- [ ] Evaluate optional inline WYSIWYG editor as a separately maintained prototype.
+- [x] Add more mainstream languages: JS/TS, HTML, CSS, Python, C++, TOML, INI, Dockerfile and CSV.
+- [x] Optional YAML/JSON validation and structure previews (opt-in only).
+- [x] Optional code snippet actions (copy-to-clipboard, extract-to-file with confirmation); **never execute embedded comment content**.
+- [x] Pack as Tool, cache cleanup with confirmation, launch profile picker.
+- [x] Add/update `#:package`, and inspect/edit `#:sdk`, `#:property`, `#:project`, `#:include`.
+- [x] .NET 11 SDK-gated project reference actions and optional format command.
+- [x] Optional CodeLens near file entry point or tagged comments, with settings to avoid clutter.
+- [x] Evaluate optional inline WYSIWYG editor as a separately maintained prototype.
+
+**WYSIWYG evaluation:** Keep the shipped preview read-only. Its webview currently receives rendered HTML and accepts only validated `ready`, `reveal`, and `copy` messages; editing would add a bidirectional, version-sensitive source-editing protocol. Exact preservation of comment delimiters, indentation, line endings, and arbitrary embedded-language bodies makes this a separate editing product rather than a small preview enhancement. If pursued, prototype it separately, starting with Markdown-only blocks and version-checked edits that replace only the selected block body.
 
 ## 10. Test matrix and edge cases
 
