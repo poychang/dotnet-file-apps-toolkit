@@ -14,6 +14,7 @@ import { FileAppDetector } from './dotnet/fileAppDetector';
 import { SdkService } from './dotnet/sdkService';
 import { registerFileAppTaskProvider } from './dotnet/taskProvider';
 import { registerActionPicker } from './ui/actionPicker';
+import { registerFileAppCodeLensProvider } from './ui/codeLensProvider';
 
 export interface ToolkitApi {
   readonly detector: FileAppDetector;
@@ -51,6 +52,7 @@ export function activate(context: vscode.ExtensionContext): ToolkitApi {
   registerCoreCommands(services);
   registerActionCommands(services);
   registerActionPicker(services);
+  context.subscriptions.push(registerFileAppCodeLensProvider(detector));
 
   registerCommand(services, COMMANDS.previewComments, async (arg) => {
     await previews.show(resolveTargetUri(arg));

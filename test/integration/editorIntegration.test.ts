@@ -111,6 +111,35 @@ describe('Editor integration', function () {
     }
   });
 
+  it('shows opt-in CodeLens only for recognized file-based apps', async () => {
+    const config = vscode.workspace.getConfiguration('dotnetFileAppsToolkit');
+    const previousWorkspaceValue = config.inspect<boolean>('codeLens.enabled')?.workspaceValue;
+    const testDir = path.join(workspaceDir(), 'code-lens');
+    const appUri = vscode.Uri.file(path.join(testDir, 'app.cs'));
+    const ordinaryUri = vscode.Uri.file(path.join(testDir, 'ordinary.cs'));
+    try {
+      await fs.mkdir(testDir, { recursive: true });
+      await fs.writeFile(appUri.fsPath, '#:property PublishAot=false\nConsole.WriteLine("app");\n');
+      await fs.writeFile(ordinaryUri.fsPath, 'class Ordinary { }\n');
+      await vscode.workspace.openTextDocument(appUri);
+      await vscode.workspace.openTextDocument(ordinaryUri);
+      await config.update('codeLens.enabled', false, vscode.ConfigurationTarget.Workspace);
+      assert.deepEqual(await vscode.commands.executeCommand('vscode.executeCodeLensProvider', appUri, 0), []);
+
+      await config.update('codeLens.enabled', true, vscode.ConfigurationTarget.Workspace);
+      const lenses = await vscode.commands.executeCommand<vscode.CodeLens[]>('vscode.executeCodeLensProvider', appUri, 0);
+      assert.deepEqual(
+        lenses?.map((lens) => lens.command?.command),
+        ['dotnetFileApps.runFile', 'dotnetFileApps.showActions'],
+      );
+      assert.ok(lenses?.every((lens) => lens.range.start.line === 0));
+      assert.deepEqual(await vscode.commands.executeCommand('vscode.executeCodeLensProvider', ordinaryUri, 0), []);
+    } finally {
+      await config.update('codeLens.enabled', previousWorkspaceValue, vscode.ConfigurationTarget.Workspace);
+      await fs.rm(testDir, { recursive: true, force: true });
+    }
+  });
+
   it('adds package directives and edits existing directives only after confirmation', async () => {
     const appDir = path.join(workspaceDir(), 'directive-editor');
     const appFile = path.join(appDir, 'directive-editor.cs');

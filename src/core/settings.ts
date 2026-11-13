@@ -12,6 +12,9 @@ export interface ToolkitSettings {
   readonly dotnetPath: string;
   readonly autoSaveBeforeRun: AutoSaveBeforeRun;
   readonly runArgs: readonly string[];
+  readonly codeLens: {
+    readonly enabled: boolean;
+  };
   readonly comments: {
     readonly enabled: boolean;
     readonly highlightEnabled: boolean;
@@ -37,6 +40,9 @@ export function getSettings(scope?: vscode.ConfigurationScope): ToolkitSettings 
     dotnetPath: typeof dotnetPath === 'string' && dotnetPath.trim().length > 0 ? dotnetPath.trim() : 'dotnet',
     autoSaveBeforeRun: oneOf(c.get('autoSaveBeforeRun'), ['prompt', 'always', 'never'], 'prompt'),
     runArgs: Array.isArray(runArgs) ? runArgs.filter((a): a is string => typeof a === 'string') : [],
+    codeLens: {
+      enabled: c.get<boolean>('codeLens.enabled', false),
+    },
     comments: {
       enabled: c.get<boolean>('comments.enabled', true),
       highlightEnabled: c.get<boolean>('comments.highlight.enabled', true),

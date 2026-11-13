@@ -131,6 +131,7 @@ YAML/JSON validation is opt-in. Enable `dotnetFileAppsToolkit.comments.validatio
 | `dotnetFileAppsToolkit.fileDetection` | `strict` | `strict`, `standalone`, or `manual` file-app detection. |
 | `dotnetFileAppsToolkit.dotnetPath` | `dotnet` | .NET executable path used by the extension host (machine setting). |
 | `dotnetFileAppsToolkit.autoSaveBeforeRun` | `prompt` | `prompt`, `always`, or `never` before CLI actions. |
+| `dotnetFileAppsToolkit.codeLens.enabled` | `false` | Show Run File and More Actions CodeLens at the top of recognized file-based apps. |
 | `dotnetFileAppsToolkit.run.args` | `[]` | Default Run File arguments; each entry is passed as one argument. |
 | `dotnetFileAppsToolkit.comments.enabled` | `true` | Enable tagged-comment scanning, hover, decorations, and preview. |
 | `dotnetFileAppsToolkit.comments.highlight.enabled` | `true` | Enable editor color and Markdown emphasis decorations. |

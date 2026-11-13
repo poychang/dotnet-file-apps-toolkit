@@ -321,6 +321,11 @@
           "default": true,
           "markdownDescription": "%config.enabled%"
         },
+        "dotnetFileAppsToolkit.codeLens.enabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%config.codeLens.enabled%"
+        },
         "dotnetFileAppsToolkit.fileDetection": {
           "type": "string",
           "enum": [

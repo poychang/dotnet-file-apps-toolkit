@@ -29,6 +29,7 @@
   "command.showLogs": "顯示記錄",
   "configuration.title": ".NET File Apps Toolkit",
   "config.enabled": "為 .NET 檔案型應用程式顯示工具組命令與編輯器動作。",
+  "config.codeLens.enabled": "在已辨識的檔案型應用程式頂端顯示「執行檔案」與「更多動作」CodeLens。預設停用以避免編輯器雜訊。",
   "config.fileDetection": "如何將 `.cs` 檔案辨識為檔案型應用程式。任何檔案都可以透過 **為此檔案啟用/停用 File Apps Toolkit** 手動加入或排除。",
   "config.fileDetection.strict": "只辨識以 `#:` 指示詞（`#:package`、`#:sdk`…）或 `dotnet` shebang 開頭的檔案。",
   "config.fileDetection.standalone": "另外辨識不在專案（`.csproj`）目錄樹內、且含有最上層陳述式的檔案。",

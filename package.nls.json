@@ -29,6 +29,7 @@
   "command.showLogs": "Show Logs",
   "configuration.title": ".NET File Apps Toolkit",
   "config.enabled": "Show toolkit commands and editor actions for .NET file-based apps.",
+  "config.codeLens.enabled": "Show Run File and More Actions CodeLens at the top of recognized file-based apps. Disabled by default to avoid editor clutter.",
   "config.fileDetection": "How `.cs` files are recognized as file-based apps. Files can always be opted in or out with **Enable/Disable File Apps Toolkit for This File**.",
   "config.fileDetection.strict": "Only files that start with `#:` directives (`#:package`, `#:sdk`, …) or a `dotnet` shebang.",
   "config.fileDetection.standalone": "Also files with top-level statements that are not inside a project (`.csproj`) directory tree.",

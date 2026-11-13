@@ -116,6 +116,7 @@ features:
 | `dotnetFileAppsToolkit.fileDetection` | `strict` | 檔案型應用程式辨識方式：`strict`、`standalone` 或 `manual`。 |
 | `dotnetFileAppsToolkit.dotnetPath` | `dotnet` | 延伸模組主機使用的 .NET 執行檔路徑（機器設定）。 |
 | `dotnetFileAppsToolkit.autoSaveBeforeRun` | `prompt` | 執行 CLI 操作前的處理方式：`prompt`、`always` 或 `never`。 |
+| `dotnetFileAppsToolkit.codeLens.enabled` | `false` | 在已辨識的檔案型應用程式頂端顯示「執行檔案」與「更多動作」CodeLens。 |
 | `dotnetFileAppsToolkit.run.args` | `[]` | 執行檔案的預設參數；陣列中的每項會作為一個參數傳遞。 |
 | `dotnetFileAppsToolkit.comments.enabled` | `true` | 啟用標記註解掃描、暫留提示、裝飾與預覽。 |
 | `dotnetFileAppsToolkit.comments.highlight.enabled` | `true` | 啟用編輯器顏色與 Markdown 強調裝飾。 |
