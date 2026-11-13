@@ -360,53 +360,53 @@ Avoid adding a required dependency on C# Dev Kit; integrate when present but kee
 
 ### P0 — Extension skeleton and capability probe
 
-- [ ] Scaffold TypeScript VS Code extension and bundler.
-- [ ] Register command IDs, editor title contribution points, and context menu.
-- [ ] Detect SDK from file directory; validate version and `global.json` behavior.
-- [ ] Implement strict file-app recognition and optional manual opt-in.
-- [ ] Add diagnostics/logging output channel and actionable error notifications.
+- [x] Scaffold TypeScript VS Code extension and bundler.
+- [x] Register command IDs, editor title contribution points, and context menu.
+- [x] Detect SDK from file directory; validate version and `global.json` behavior.
+- [x] Implement strict file-app recognition and optional manual opt-in.
+- [x] Add diagnostics/logging output channel and actionable error notifications.
 
 **Acceptance:** extension activates on qualifying `.cs`; doesn't trigger inappropriate commands on a normal project file; displays a useful error without a suitable SDK.
 
 ### P1 — Core CLI interactions (first working version)
 
-- [ ] Implement `runFile`, `restore`, `convertToProject`, `build`, `clean`, and `publish`.
-- [ ] Implement `showActions` QuickPick and Run with Arguments.
-- [ ] Use tasks/process argument arrays, explicit `cwd`, save-before-run, and cancellation.
-- [ ] Check output/exit status and guard against destructive/colliding conversion.
+- [x] Implement `runFile`, `restore`, `convertToProject`, `build`, `clean`, and `publish`.
+- [x] Implement `showActions` QuickPick and Run with Arguments.
+- [x] Use tasks/process argument arrays, explicit `cwd`, save-before-run, and cancellation.
+- [x] Check output/exit status and guard against destructive/colliding conversion.
 
 **Acceptance:** with .NET SDK 10+, app runs in integrated terminal; restore/build/clean/publish work on fixtures; conversion produces a project with the original file preserved.
 
 ### P2a — Explicit tagged comments and rendering foundation
 
-- [ ] Replace old `/**` Markdown-only behavior with an explicit `/*<language>` tag contract.
-- [ ] Build `TaggedCommentScanner` with source maps, C#-aware string/comment recognition and unit tests.
-- [ ] Build `EmbeddedLanguageRegistry` and alias resolution; unknown/ordinary comments remain unchanged.
-- [ ] Implement Markdown hover, editor decoration fallback and rich Markdown preview.
-- [ ] Implement syntax-highlighted code preview with YAML, JSON, SQL, XML, Bash, PowerShell and C# grammar support (lazy loaded if feasible).
-- [ ] Implement preview source navigation, safe update, bounded caching and strict Webview CSP.
+- [x] Replace old `/**` Markdown-only behavior with an explicit `/*<language>` tag contract.
+- [x] Build `TaggedCommentScanner` with source maps, C#-aware string/comment recognition and unit tests.
+- [x] Build `EmbeddedLanguageRegistry` and alias resolution; unknown/ordinary comments remain unchanged.
+- [x] Implement Markdown hover, editor decoration fallback and rich Markdown preview.
+- [x] Implement syntax-highlighted code preview with YAML, JSON, SQL, XML, Bash, PowerShell and C# grammar support (lazy loaded if feasible).
+- [x] Implement preview source navigation, safe update, bounded caching and strict Webview CSP.
 
 **Acceptance:** Markdown is richly rendered in preview, YAML/JSON/SQL/etc. appear as highlighted code in preview; only explicit tagged comments are recognized; ordinary `/** */` isn't automatically rendered.
 
 ### P2b — Inline syntax highlighting proof and implementation
 
-- [ ] Build a minimal `source.cs` TextMate injection prototype for `/*yaml` and `/*json`.
-- [ ] Confirm scopes using VS Code Scope Inspector; test opening tag, multiline body, C# comment terminator and sibling comments.
-- [ ] Verify themed highlighting and interoperability with C# semantic highlighting / C# Dev Kit.
-- [ ] Generalize injection rules to the MVP language list only where verified.
-- [ ] For unsupported/conflicting cases, implement performant token-level `TextEditorDecorationType` fallback.
-- [ ] Confirm enabling/disabling setting behavior; document grammar injection limitations.
+- [x] Build a minimal `source.cs` TextMate injection prototype for `/*yaml` and `/*json`.
+- [x] Confirm scopes using VS Code Scope Inspector; test opening tag, multiline body, C# comment terminator and sibling comments. *(Automated with `_workbench.captureSyntaxTokens`, the API behind the Scope Inspector.)*
+- [ ] Verify themed highlighting and interoperability with C# semantic highlighting / C# Dev Kit. *(Themed highlighting is verified. C# semantic highlighting is verified only by design: a fake semantic-token provider test plus VS Code emitting decoration `color` with `!important`. Real C# Dev Kit still needs a manual check because the test host runs with `--disable-extensions`.)*
+- [x] Generalize injection rules to the MVP language list only where verified.
+- [x] For unsupported/conflicting cases, implement performant token-level `TextEditorDecorationType` fallback.
+- [x] Confirm enabling/disabling setting behavior; document grammar injection limitations.
 
 **Acceptance:** `/*yaml` highlights keys/strings/values in the **native `.cs` editor**, not only in webview, without changing other C# code or comments; a documented, working fallback exists.
 
 ### P3 — Integration, accessibility, and release
 
-- [ ] Unit tests for parser, alias registry, normalizer, detector, argument builder and SDK gating.
-- [ ] VS Code integration tests for toolbar, command targets, injection/decoration highlighting, hover and preview.
-- [ ] Validate Windows, Linux, macOS, WSL/SSH/Dev Containers where available.
-- [ ] Confirm keyboard accessibility, theme contrast, localization-ready strings, disposal, and graceful fallback.
-- [ ] CI lint/typecheck/unit tests, supported integration tests, bundle and VSIX.
-- [ ] README with examples of `/*markdown`, `/*yaml`, `/*json`, supported aliases, known limitations, screenshots and compatibility table.
+- [x] Unit tests for parser, alias registry, normalizer, detector, argument builder and SDK gating.
+- [x] VS Code integration tests for toolbar, command targets, injection/decoration highlighting, hover and preview.
+- [ ] Validate Windows, Linux, macOS, WSL/SSH/Dev Containers where available. *(Windows, Linux and macOS are covered by CI. WSL, SSH and Dev Containers have not been validated yet.)*
+- [x] Confirm keyboard accessibility, theme contrast, localization-ready strings, disposal, and graceful fallback.
+- [x] CI lint/typecheck/unit tests, supported integration tests, bundle and VSIX.
+- [x] README with examples of `/*markdown`, `/*yaml`, `/*json`, supported aliases, known limitations, screenshots and compatibility table.
 
 **Acceptance:** clean CI, no source mutation on read-only features, no injection on odd filenames, works on multiple editor tabs/paths with spaces, `.vsix` installs and documented demos reproduce.
 
@@ -442,15 +442,15 @@ Avoid adding a required dependency on C# Dev Kit; integrate when present but kee
 
 ## 11. Definition of Done for 0.1.0
 
-- [ ] Editor toolbar runs against intended `.cs` URI and remains contextual.
-- [ ] Run, Restore, Convert, Build, Clean and Publish work with a supported SDK.
-- [ ] Every CLI run reports its outcome; failures never appear successful.
-- [ ] Only explicitly tagged `/*<known-language>` blocks participate; `/** */` and ordinary comments do not.
-- [ ] Markdown tags have rich hover/preview; YAML, JSON, SQL, XML, Bash, PowerShell and C# tags have highlighted code previews.
-- [ ] YAML/JSON inline native-editor syntax highlighting works via verified injection grammar **or** performant decoration fallback; all shipped MVP languages have clear compatibility behavior.
-- [ ] Read-only rendering never edits the source; Convert preserves the original source.
-- [ ] Workspace trust, preview injection safety, argument safety, SDK gating and unsupported environments are covered.
-- [ ] Passing tests and a distributable `.vsix` exist.
+- [x] Editor toolbar runs against intended `.cs` URI and remains contextual.
+- [x] Run, Restore, Convert, Build, Clean and Publish work with a supported SDK.
+- [x] Every CLI run reports its outcome; failures never appear successful.
+- [x] Only explicitly tagged `/*<known-language>` blocks participate; `/** */` and ordinary comments do not.
+- [x] Markdown tags have rich hover/preview; YAML, JSON, SQL, XML, Bash, PowerShell and C# tags have highlighted code previews.
+- [x] YAML/JSON inline native-editor syntax highlighting works via verified injection grammar **or** performant decoration fallback; all shipped MVP languages have clear compatibility behavior.
+- [x] Read-only rendering never edits the source; Convert preserves the original source.
+- [x] Workspace trust, preview injection safety, argument safety, SDK gating and unsupported environments are covered. *(Restricted Mode is covered by `test/restricted`.)*
+- [x] Passing tests and a distributable `.vsix` exist.
 
 ## 12. Implementation guidance for GitHub Copilot / coding agents
 
