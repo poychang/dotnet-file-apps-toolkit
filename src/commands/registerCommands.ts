@@ -28,6 +28,7 @@ export const COMMANDS = {
   publish: 'dotnetFileApps.publish',
   packAsTool: 'dotnetFileApps.packAsTool',
   cleanFileAppCache: 'dotnetFileApps.cleanFileAppCache',
+  manageDirectives: 'dotnetFileApps.manageDirectives',
   convertToProject: 'dotnetFileApps.convertToProject',
   previewComments: 'dotnetFileApps.previewComments',
   copyTaggedComment: 'dotnetFileApps.copyTaggedComment',

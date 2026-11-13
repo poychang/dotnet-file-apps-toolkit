@@ -127,6 +127,11 @@
         "category": "%category%"
       },
       {
+        "command": "dotnetFileApps.manageDirectives",
+        "title": "%command.manageDirectives%",
+        "category": "%category%"
+      },
+      {
         "command": "dotnetFileApps.checkSdk",
         "title": "%command.checkSdk%",
         "category": "%category%"
@@ -217,8 +222,13 @@
           "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
         },
         {
-          "command": "dotnetFileApps.showActions",
+          "command": "dotnetFileApps.manageDirectives",
           "group": "dotnetFileApps@6",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
+        },
+        {
+          "command": "dotnetFileApps.showActions",
+          "group": "dotnetFileApps@7",
           "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
         }
       ],
@@ -269,6 +279,10 @@
         },
         {
           "command": "dotnetFileApps.cleanFileAppCache",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.manageDirectives",
           "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
         },
         {

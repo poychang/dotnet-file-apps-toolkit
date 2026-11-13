@@ -21,8 +21,10 @@ import {
   parseArgumentString,
   type DotnetAction,
 } from '../dotnet/cliArgs';
+import { makeDirectiveInsertion, packageDirectiveId, parsePackageReference } from '../dotnet/directiveEdits';
 import type { CommandOutcome, DotnetCommand } from '../dotnet/commandRunner';
 import type { DetectionResult } from '../dotnet/fileAppDetector';
+import { analyzeFileAppText, type FileAppDirective } from '../dotnet/fileAppSignals';
 import { parseLaunchProfiles, type LaunchProfile } from '../dotnet/launchProfiles';
 import { COMMANDS, registerCommand, type ToolkitServices } from './registerCommands';
 import { registerTaggedCommentActions } from './taggedCommentActions';
@@ -59,13 +61,23 @@ interface FileAppTarget {
   readonly detection: DetectionResult;
 }
 
+interface DirectiveActionItem extends vscode.QuickPickItem {
+  readonly action: 'add-package' | 'edit-directive';
+  readonly directive?: FileAppDirective;
+}
+
 /**
  * Validates the clicked/active file, workspace trust and file-app recognition. Never relies on the
  * context key used for menus: the handler re-checks everything for the URI it actually acts on.
  */
-async function resolveFileAppTarget(services: ToolkitServices, arg: unknown, action: DotnetAction): Promise<FileAppTarget> {
+async function resolveFileAppTarget(
+  services: ToolkitServices,
+  arg: unknown,
+  action: DotnetAction,
+  requireWorkspaceTrust = true,
+): Promise<FileAppTarget> {
   const uri = await validateLocalCSharpFile(resolveTargetUri(arg));
-  if (!vscode.workspace.isTrusted) {
+  if (requireWorkspaceTrust && !vscode.workspace.isTrusted) {
     throw new UserFacingError(
       vscode.l10n.t('"{0}" runs the .NET SDK, which can execute code from this folder. Trust the workspace to use it.', actionTitle(action)),
       [{ title: vscode.l10n.t('Manage Workspace Trust'), run: () => vscode.commands.executeCommand('workbench.trust.manage') }],
@@ -507,6 +519,185 @@ async function launchProfiles(file: string): Promise<readonly LaunchProfile[]> {
   return [];
 }
 
+async function manageDirectives(services: ToolkitServices, arg: unknown): Promise<void> {
+  const { uri } = await resolveFileAppTarget(services, arg, 'run', false);
+  const document = await vscode.workspace.openTextDocument(uri);
+  const source = document.getText();
+  const version = document.version;
+  const analysis = analyzeFileAppText(source);
+  const items: DirectiveActionItem[] = [
+    {
+      label: vscode.l10n.t('Add or Update NuGet Package…'),
+      description: vscode.l10n.t('Edit the #:package directive'),
+      action: 'add-package',
+    },
+    ...analysis.directives
+      .filter((directive) => ['sdk', 'package', 'project', 'property', 'include'].includes(directive.name))
+      .map((directive) => ({
+        label: `#:${directive.name} ${directive.value}`,
+        description: vscode.l10n.t('Line {0}', String(document.positionAt(directive.start).line + 1)),
+        action: 'edit-directive' as const,
+        directive,
+      })),
+  ];
+  const selected = await vscode.window.showQuickPick(items, {
+    title: vscode.l10n.t('Manage File-Based App Directives'),
+    placeHolder: vscode.l10n.t('Select a directive to edit or add a package'),
+    matchOnDescription: true,
+  });
+  if (!selected) {
+    throw new CancelledError();
+  }
+  if (selected.action === 'add-package') {
+    await editPackageDirective(document, source, analysis, version);
+    return;
+  }
+  if (!selected.directive) {
+    throw new Error('The selected directive is missing its source range.');
+  }
+  if (selected.directive.name === 'package') {
+    await editPackageDirective(document, source, analysis, version, selected.directive.value);
+    return;
+  }
+  await editExistingDirective(document, selected.directive, version);
+}
+
+async function editPackageDirective(
+  document: vscode.TextDocument,
+  source: string,
+  analysis: ReturnType<typeof analyzeFileAppText>,
+  version: number,
+  initialValue?: string,
+): Promise<void> {
+  const input = await vscode.window.showInputBox({
+    title: vscode.l10n.t('Add or Update NuGet Package'),
+    prompt: vscode.l10n.t('Enter a package reference such as Humanizer@2.14.1.'),
+    placeHolder: 'PackageId@Version',
+    value: initialValue,
+    validateInput: (value) =>
+      parsePackageReference(value)
+        ? undefined
+        : vscode.l10n.t('Enter a valid PackageId@Version reference on one line.'),
+  });
+  if (input === undefined) {
+    throw new CancelledError();
+  }
+  const reference = parsePackageReference(input);
+  if (!reference) {
+    throw new UserFacingError(vscode.l10n.t('Enter a valid PackageId@Version reference on one line.'), [], 'warning');
+  }
+  const matches = analysis.directives.filter(
+    (directive) =>
+      directive.name === 'package' && packageDirectiveId(directive.value)?.toLowerCase() === reference.id.toLowerCase(),
+  );
+  if (matches.length > 1) {
+    throw new UserFacingError(
+      vscode.l10n.t('The package {0} appears in multiple #:package directives. Remove the duplicates before updating it.', reference.id),
+      [],
+      'warning',
+    );
+  }
+  const existing = matches[0];
+  if (existing?.value === reference.value) {
+    return;
+  }
+  const edit = existing
+    ? { start: existing.start, end: existing.end, text: `#:package ${reference.value}` }
+    : makeDirectiveInsertion(source, analysis, `#:package ${reference.value}`);
+  const button = existing ? vscode.l10n.t('Update Package') : vscode.l10n.t('Add Package');
+  const prompt = existing
+    ? vscode.l10n.t('Update package reference to {0}?', reference.value)
+    : vscode.l10n.t('Add package reference {0}?', reference.value);
+  const choice = await vscode.window.showWarningMessage(
+    prompt,
+    {
+      modal: true,
+      detail: vscode.l10n.t('This edits the #:package directive only. Dependencies are not restored until a .NET CLI operation runs.'),
+    },
+    button,
+  );
+  if (choice !== button) {
+    throw new CancelledError();
+  }
+  await applyDirectiveEdit(document, edit, version);
+  void vscode.window.showInformationMessage(
+    existing
+      ? vscode.l10n.t('Updated #:package {0} in {1}.', reference.value, path.basename(document.uri.fsPath))
+      : vscode.l10n.t('Added #:package {0} to {1}.', reference.value, path.basename(document.uri.fsPath)),
+  );
+}
+
+async function editExistingDirective(
+  document: vscode.TextDocument,
+  directive: FileAppDirective,
+  version: number,
+): Promise<void> {
+  const input = await vscode.window.showInputBox({
+    title: vscode.l10n.t('Edit the #:{0} directive', directive.name),
+    prompt: vscode.l10n.t('Enter a non-empty directive value on one line.'),
+    value: directive.value,
+    validateInput: (value) =>
+      value.trim().length > 0 && value.length <= 4096 && !/[\r\n]/.test(value)
+        ? undefined
+        : vscode.l10n.t('Enter a non-empty directive value of at most 4096 characters on one line.'),
+  });
+  if (input === undefined) {
+    throw new CancelledError();
+  }
+  const value = input.trim();
+  if (!value || value.length > 4096 || /[\r\n]/.test(input)) {
+    throw new UserFacingError(
+      vscode.l10n.t('Enter a non-empty directive value of at most 4096 characters on one line.'),
+      [],
+      'warning',
+    );
+  }
+  if (value === directive.value) {
+    return;
+  }
+  const button = vscode.l10n.t('Update Directive');
+  const choice = await vscode.window.showWarningMessage(
+    vscode.l10n.t('Update the #:{0} directive?', directive.name),
+    {
+      modal: true,
+      detail: vscode.l10n.t('Change the value from "{0}" to "{1}".', directive.value, value),
+    },
+    button,
+  );
+  if (choice !== button) {
+    throw new CancelledError();
+  }
+  await applyDirectiveEdit(document, {
+    start: directive.start,
+    end: directive.end,
+    text: `#:${directive.name} ${value}`,
+  }, version);
+  void vscode.window.showInformationMessage(vscode.l10n.t('Updated the #:{0} directive in {1}.', directive.name, path.basename(document.uri.fsPath)));
+}
+
+async function applyDirectiveEdit(
+  document: vscode.TextDocument,
+  edit: { readonly start: number; readonly end: number; readonly text: string },
+  version: number,
+): Promise<void> {
+  if (document.version !== version) {
+    throw new UserFacingError(
+      vscode.l10n.t('The file changed while you were editing its directives. Run the command again to avoid overwriting newer edits.'),
+      [],
+      'warning',
+    );
+  }
+  const workspaceEdit = new vscode.WorkspaceEdit();
+  workspaceEdit.replace(
+    document.uri,
+    new vscode.Range(document.positionAt(edit.start), document.positionAt(edit.end)),
+    edit.text,
+  );
+  if (!(await vscode.workspace.applyEdit(workspaceEdit))) {
+    throw new UserFacingError(vscode.l10n.t('Could not update the directive in {0}.', path.basename(document.uri.fsPath)));
+  }
+}
+
 async function runWithProfile(services: ToolkitServices, arg: unknown): Promise<CommandOutcome> {
   const { uri } = await resolveFileAppTarget(services, arg, 'run');
   const profiles = await launchProfiles(uri.fsPath);
@@ -600,6 +791,7 @@ export function registerActionCommands(services: ToolkitServices): void {
   });
   registerCommand(services, COMMANDS.runWithArgs, (arg) => runWithArgs(services, arg));
   registerCommand(services, COMMANDS.runWithProfile, (arg) => runWithProfile(services, arg));
+  registerCommand(services, COMMANDS.manageDirectives, (arg) => manageDirectives(services, arg));
   registerCommand(services, COMMANDS.restore, (arg) => simpleAction(services, arg, 'restore'));
   registerCommand(services, COMMANDS.build, (arg) => simpleAction(services, arg, 'build'));
   registerCommand(services, COMMANDS.clean, (arg) => simpleAction(services, arg, 'clean'));

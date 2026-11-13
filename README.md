@@ -35,6 +35,7 @@ Use the editor title actions, Command Palette (`.NET File Apps`), or the command
 | Publish Executable… | Publish to a selected output folder |
 | Pack as Tool | Package the file as a .NET tool; `#:property PackAsTool=false` disables this action |
 | Clean File-Based App Cache… | Confirm and remove cached artifacts unused for at least 30 days by default |
+| Manage File-Based App Directives… | Add/update `#:package` references or inspect/edit existing `#:sdk`, `#:property`, `#:project`, and `#:include` directives |
 | Convert to Project… | Create a project folder and keep the original file unchanged |
 | Check .NET SDK | Show the SDK selected for the file's folder |
 | More Actions… | Open the file's action picker |
@@ -42,6 +43,7 @@ Use the editor title actions, Command Palette (`.NET File Apps`), or the command
 | Extract Tagged Comment to File… | Confirm and write a dedented standalone file; the body is never executed |
 
 The toolkit prompts before saving unsaved changes by default. Published file-based apps use Native AOT by default; this requires the platform's native toolchain. Add `#:property PublishAot=false` to publish a framework-dependent app instead.
+Directive edits are applied to the open document after confirmation; adding a package does not restore it or run the app.
 
 The `dotnet-file-app` task type is available for `tasks.json` (`run`, `restore`, `build`, `clean`, `publish`, and `pack`):
 

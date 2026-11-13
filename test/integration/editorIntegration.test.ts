@@ -111,6 +111,44 @@ describe('Editor integration', function () {
     }
   });
 
+  it('adds package directives and edits existing directives only after confirmation', async () => {
+    const appDir = path.join(workspaceDir(), 'directive-editor');
+    const appFile = path.join(appDir, 'directive-editor.cs');
+    await fs.mkdir(appDir, { recursive: true });
+    await fs.writeFile(appFile, '#:property PublishAot=false\nConsole.WriteLine("ok");\n');
+    const uri = vscode.Uri.file(appFile);
+    let document: vscode.TextDocument | undefined;
+    try {
+      document = await vscode.workspace.openTextDocument(uri);
+      await vscode.window.showTextDocument(document);
+      let selection = 0;
+      ui.pick = (items) => {
+        const label = selection++ === 0 ? 'Add or Update NuGet Package…' : '#:property PublishAot=false';
+        return items.find((item) => item.label === label);
+      };
+      const inputs = ['Humanizer@2.14.1', 'PublishAot=true'];
+      ui.input = () => inputs.shift();
+      ui.respond = (message) =>
+        message.items.includes('Add Package')
+          ? 'Add Package'
+          : message.items.includes('Update Directive')
+            ? 'Update Directive'
+            : undefined;
+
+      await vscode.commands.executeCommand('dotnetFileApps.manageDirectives', uri);
+      assert.match(document.getText(), /^#:property PublishAot=false\n#:package Humanizer@2\.14\.1\n/);
+
+      await vscode.commands.executeCommand('dotnetFileApps.manageDirectives', uri);
+      assert.match(document.getText(), /^#:property PublishAot=true\n#:package Humanizer@2\.14\.1\n/);
+      assert.deepEqual(ui.errors(), []);
+    } finally {
+      if (document?.isDirty) {
+        await document.save();
+      }
+      await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+    }
+  });
+
   it('runs commands on the URI argument and falls back to the active editor', async () => {
     await show(markdownUri());
     await vscode.commands.executeCommand('dotnetFileApps.previewComments', yamlUri());
