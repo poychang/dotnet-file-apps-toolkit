@@ -7,6 +7,8 @@ import {
   buildBuildArgs,
   buildCleanArgs,
   buildConvertArgs,
+  buildFileAppCacheCleanArgs,
+  buildPackArgs,
   buildPublishArgs,
   buildRestoreArgs,
   buildRunArgs,
@@ -15,11 +17,13 @@ import {
   defaultPublishOutputDir,
   formatArgumentString,
   isPublishAotDisabled,
+  isPackAsToolDisabled,
   parseArgumentString,
   type DotnetAction,
 } from '../dotnet/cliArgs';
 import type { CommandOutcome, DotnetCommand } from '../dotnet/commandRunner';
 import type { DetectionResult } from '../dotnet/fileAppDetector';
+import { parseLaunchProfiles, type LaunchProfile } from '../dotnet/launchProfiles';
 import { COMMANDS, registerCommand, type ToolkitServices } from './registerCommands';
 import { registerTaggedCommentActions } from './taggedCommentActions';
 import { resolveTargetUri, validateLocalCSharpFile } from './target';
@@ -39,6 +43,8 @@ function actionTitle(action: DotnetAction): string {
       return vscode.l10n.t('Clean');
     case 'publish':
       return vscode.l10n.t('Publish');
+    case 'pack':
+      return vscode.l10n.t('Pack as Tool');
     case 'convert':
       return vscode.l10n.t('Convert');
   }
@@ -198,15 +204,22 @@ function revealInOsLabel(): string {
       : vscode.l10n.t('Open Containing Folder');
 }
 
-async function runFile(services: ToolkitServices, uri: vscode.Uri, appArgs: readonly string[]): Promise<CommandOutcome> {
+async function runFile(
+  services: ToolkitServices,
+  uri: vscode.Uri,
+  appArgs: readonly string[],
+  launchProfile?: string,
+): Promise<CommandOutcome> {
   const dotnetPath = await prepareExecution(services, uri, 'run');
   return execute(services, {
     action: 'run',
     fileUri: uri,
     dotnetPath,
-    args: buildRunArgs(uri.fsPath, appArgs),
+    args: buildRunArgs(uri.fsPath, appArgs, launchProfile),
     appArgs,
-    name: taskName('run', uri),
+    name: launchProfile
+      ? vscode.l10n.t('Run {0} with profile {1}', path.basename(uri.fsPath), launchProfile)
+      : taskName('run', uri),
     focus: true,
   });
 }
@@ -465,16 +478,134 @@ async function runWithArgs(services: ToolkitServices, arg: unknown): Promise<Com
   return runFile(services, uri, parsed.args);
 }
 
+async function launchProfiles(file: string): Promise<readonly LaunchProfile[]> {
+  const directory = path.dirname(file);
+  const candidates = [
+    path.join(directory, 'Properties', 'launchSettings.json'),
+    path.join(directory, `${path.basename(file, path.extname(file))}.run.json`),
+  ];
+  for (const candidate of candidates) {
+    const uri = vscode.Uri.file(candidate);
+    if (vscode.workspace.textDocuments.some((document) => document.uri.toString() === uri.toString() && document.isDirty)) {
+      throw new UserFacingError(vscode.l10n.t('Save the launch settings file before selecting a profile: {0}', candidate), [], 'warning');
+    }
+    let source: string;
+    try {
+      source = await fs.readFile(candidate, 'utf8');
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        continue;
+      }
+      throw error;
+    }
+    const result = parseLaunchProfiles(source);
+    if (!result.ok) {
+      throw new UserFacingError(vscode.l10n.t('Could not read launch profiles from {0}: {1}', candidate, result.error));
+    }
+    return result.profiles;
+  }
+  return [];
+}
+
+async function runWithProfile(services: ToolkitServices, arg: unknown): Promise<CommandOutcome> {
+  const { uri } = await resolveFileAppTarget(services, arg, 'run');
+  const profiles = await launchProfiles(uri.fsPath);
+  if (profiles.length === 0) {
+    throw new UserFacingError(vscode.l10n.t('No supported launch profiles were found for {0}.', path.basename(uri.fsPath)), [], 'info');
+  }
+  const items = profiles.map((profile) => ({
+    label: profile.name,
+    description: profile.commandName,
+    profile,
+  }));
+  const picked = await vscode.window.showQuickPick(items, {
+    title: vscode.l10n.t('Run {0} with a Launch Profile', path.basename(uri.fsPath)),
+    placeHolder: vscode.l10n.t('Select a launch profile'),
+    matchOnDescription: true,
+  });
+  if (!picked) {
+    throw new CancelledError();
+  }
+  return runFile(services, uri, getSettings(uri).runArgs, picked.profile.name);
+}
+
+async function packAsTool(services: ToolkitServices, arg: unknown): Promise<CommandOutcome> {
+  const { uri, detection } = await resolveFileAppTarget(services, arg, 'pack');
+  if (isPackAsToolDisabled(detection.analysis.directives)) {
+    throw new UserFacingError(vscode.l10n.t('This file sets PackAsTool=false. Remove or update that directive before packing it as a tool.'), [], 'warning');
+  }
+  const dotnetPath = await prepareExecution(services, uri, 'pack');
+  const command: DotnetCommand = {
+    action: 'pack',
+    fileUri: uri,
+    dotnetPath,
+    args: buildPackArgs(uri.fsPath),
+    name: taskName('pack', uri),
+  };
+  const outcome = await execute(services, command, vscode.l10n.t('Packing {0} as a tool…', path.basename(uri.fsPath)));
+  ensureSucceeded(outcome, command.name);
+  void vscode.window.showInformationMessage(vscode.l10n.t('Packed {0} as a tool.', path.basename(uri.fsPath)));
+  return outcome;
+}
+
+async function cleanFileAppCache(services: ToolkitServices, arg: unknown): Promise<CommandOutcome> {
+  const { uri } = await resolveFileAppTarget(services, arg, 'clean');
+  const sdk = await services.sdk.require(uri);
+  const value = await vscode.window.showInputBox({
+    title: vscode.l10n.t('Clean File-Based App Cache'),
+    prompt: vscode.l10n.t('Remove cache artifacts unused for at least this many days.'),
+    value: '30',
+    validateInput: (input) => {
+      const days = Number(input);
+      return /^\d+$/.test(input) && Number.isSafeInteger(days) && days <= 2_147_483_647
+        ? undefined
+        : vscode.l10n.t('Enter a whole number from 0 to {0}.', '2147483647');
+    },
+  });
+  if (value === undefined) {
+    throw new CancelledError();
+  }
+  const days = Number(value);
+  const cleanLabel = vscode.l10n.t('Clean Cache');
+  const choice = await vscode.window.showWarningMessage(
+    vscode.l10n.t('Clean file-based app cache?'),
+    {
+      modal: true,
+      detail: vscode.l10n.t('This removes cached build artifacts that have been unused for at least {0} days.', String(days)),
+    },
+    cleanLabel,
+  );
+  if (choice !== cleanLabel) {
+    throw new CancelledError();
+  }
+  const command: DotnetCommand = {
+    action: 'clean',
+    fileUri: uri,
+    dotnetPath: sdk.dotnetPath,
+    args: buildFileAppCacheCleanArgs(days),
+    name: vscode.l10n.t('Clean File-Based App Cache'),
+    presentation: 'captured',
+    exclusive: true,
+  };
+  const outcome = await execute(services, command, vscode.l10n.t('Cleaning file-based app cache…'));
+  ensureSucceeded(outcome, command.name);
+  void vscode.window.showInformationMessage(vscode.l10n.t('File-based app cache cleanup completed.'));
+  return outcome;
+}
+
 export function registerActionCommands(services: ToolkitServices): void {
   registerCommand(services, COMMANDS.runFile, async (arg) => {
     const { uri } = await resolveFileAppTarget(services, arg, 'run');
     return runFile(services, uri, getSettings(uri).runArgs);
   });
   registerCommand(services, COMMANDS.runWithArgs, (arg) => runWithArgs(services, arg));
+  registerCommand(services, COMMANDS.runWithProfile, (arg) => runWithProfile(services, arg));
   registerCommand(services, COMMANDS.restore, (arg) => simpleAction(services, arg, 'restore'));
   registerCommand(services, COMMANDS.build, (arg) => simpleAction(services, arg, 'build'));
   registerCommand(services, COMMANDS.clean, (arg) => simpleAction(services, arg, 'clean'));
   registerCommand(services, COMMANDS.publish, (arg) => publish(services, arg));
   registerCommand(services, COMMANDS.convertToProject, (arg) => convertToProject(services, arg));
+  registerCommand(services, COMMANDS.packAsTool, (arg) => packAsTool(services, arg));
+  registerCommand(services, COMMANDS.cleanFileAppCache, (arg) => cleanFileAppCache(services, arg));
   registerTaggedCommentActions(services);
 }

@@ -30,15 +30,18 @@ Console.WriteLine("Hello from a file-based app!");
 | --- | --- |
 | 執行檔案 | 使用 `dotnet run --file` 執行選取的檔案 |
 | 帶參數執行… | 使用個別解析的應用程式參數執行（不進行 shell 展開） |
+| 使用啟動設定檔執行… | 從 `Properties/launchSettings.json` 或 `<AppName>.run.json` 選取 `Project` 或 `Executable` 設定檔 |
 | 還原／建置／清除檔案建置輸出 | 執行對應的檔案型 .NET CLI 操作 |
 | 發佈可執行檔… | 發佈至選取的輸出資料夾 |
+| 封裝為工具 | 將檔案封裝為 .NET 工具；`#:property PackAsTool=false` 會停用此動作 |
+| 清理檔案型應用程式快取… | 確認後清理至少 30 天未使用的快取產物（預設值） |
 | 轉換為專案… | 建立專案資料夾並保留原始檔案 |
 | 檢查 .NET SDK | 顯示此檔案資料夾所選用的 SDK |
 | 更多動作… | 開啟檔案動作選單 |
 
 預設會在儲存未儲存的變更前詢問。檔案型應用程式預設以 Native AOT 發佈，這需要平台原生工具鏈。若要改為發佈架構相依應用程式，請加入 `#:property PublishAot=false`。
 
-`tasks.json` 可使用 `dotnet-file-app` 工作類型：
+`tasks.json` 可使用 `dotnet-file-app` 工作類型（`run`、`restore`、`build`、`clean`、`publish` 和 `pack`）：
 
 ```json
 {

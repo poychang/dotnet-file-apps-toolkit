@@ -30,8 +30,11 @@ Use the editor title actions, Command Palette (`.NET File Apps`), or the command
 | --- | --- |
 | Run File | Run the selected file with `dotnet run --file` |
 | Run with Arguments… | Run with separately parsed application arguments (no shell expansion) |
+| Run with Launch Profile… | Select a `Project` or `Executable` profile from `Properties/launchSettings.json` or `<AppName>.run.json` |
 | Restore / Build / Clean File | Run the corresponding file-based .NET CLI operation |
 | Publish Executable… | Publish to a selected output folder |
+| Pack as Tool | Package the file as a .NET tool; `#:property PackAsTool=false` disables this action |
+| Clean File-Based App Cache… | Confirm and remove cached artifacts unused for at least 30 days by default |
 | Convert to Project… | Create a project folder and keep the original file unchanged |
 | Check .NET SDK | Show the SDK selected for the file's folder |
 | More Actions… | Open the file's action picker |
@@ -40,7 +43,7 @@ Use the editor title actions, Command Palette (`.NET File Apps`), or the command
 
 The toolkit prompts before saving unsaved changes by default. Published file-based apps use Native AOT by default; this requires the platform's native toolchain. Add `#:property PublishAot=false` to publish a framework-dependent app instead.
 
-The `dotnet-file-app` task type is available for `tasks.json`:
+The `dotnet-file-app` task type is available for `tasks.json` (`run`, `restore`, `build`, `clean`, `publish`, and `pack`):
 
 ```json
 {

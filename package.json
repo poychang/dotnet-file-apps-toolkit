@@ -97,6 +97,11 @@
         "category": "%category%"
       },
       {
+        "command": "dotnetFileApps.runWithProfile",
+        "title": "%command.runWithProfile%",
+        "category": "%category%"
+      },
+      {
         "command": "dotnetFileApps.build",
         "title": "%command.build%",
         "category": "%category%"
@@ -109,6 +114,16 @@
       {
         "command": "dotnetFileApps.publish",
         "title": "%command.publish%",
+        "category": "%category%"
+      },
+      {
+        "command": "dotnetFileApps.packAsTool",
+        "title": "%command.packAsTool%",
+        "category": "%category%"
+      },
+      {
+        "command": "dotnetFileApps.cleanFileAppCache",
+        "title": "%command.cleanFileAppCache%",
         "category": "%category%"
       },
       {
@@ -187,8 +202,23 @@
           "when": "config.dotnetFileAppsToolkit.enabled && resourceExtname =~ /^\\.cs$/i && resource in dotnetFileApps.taggedCommentUris"
         },
         {
-          "command": "dotnetFileApps.showActions",
+          "command": "dotnetFileApps.packAsTool",
           "group": "dotnetFileApps@3",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
+        },
+        {
+          "command": "dotnetFileApps.runWithProfile",
+          "group": "dotnetFileApps@4",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
+        },
+        {
+          "command": "dotnetFileApps.cleanFileAppCache",
+          "group": "dotnetFileApps@5",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
+        },
+        {
+          "command": "dotnetFileApps.showActions",
+          "group": "dotnetFileApps@6",
           "when": "config.dotnetFileAppsToolkit.enabled && resourceScheme == file && resource in dotnetFileApps.fileAppUris"
         }
       ],
@@ -218,6 +248,10 @@
           "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
         },
         {
+          "command": "dotnetFileApps.runWithProfile",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
           "command": "dotnetFileApps.build",
           "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
         },
@@ -227,6 +261,14 @@
         },
         {
           "command": "dotnetFileApps.publish",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.packAsTool",
+          "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
+        },
+        {
+          "command": "dotnetFileApps.cleanFileAppCache",
           "when": "resourceScheme == file && resourceExtname =~ /^\\.cs$/i"
         },
         {
@@ -355,7 +397,8 @@
               "restore",
               "build",
               "clean",
-              "publish"
+              "publish",
+              "pack"
             ],
             "description": "%taskDefinition.action%"
           },

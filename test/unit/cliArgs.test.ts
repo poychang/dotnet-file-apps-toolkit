@@ -2,6 +2,8 @@ import * as assert from 'node:assert/strict';
 import * as path from 'node:path';
 import {
   buildConvertArgs,
+  buildFileAppCacheCleanArgs,
+  buildPackArgs,
   buildPublishArgs,
   buildRunArgs,
   convertedProjectFile,
@@ -9,6 +11,7 @@ import {
   defaultPublishOutputDir,
   formatArgumentString,
   isPublishAotDisabled,
+  isPackAsToolDisabled,
   parseArgumentString,
 } from '../../src/dotnet/cliArgs';
 import { analyzeFileAppText } from '../../src/dotnet/fileAppSignals';
@@ -23,12 +26,30 @@ describe('cliArgs', () => {
   it('always runs the file with --file and separates application arguments', () => {
     assert.deepEqual(buildRunArgs('/w/app.cs'), ['run', '--file', '/w/app.cs']);
     assert.deepEqual(buildRunArgs('/w/app.cs', ['--verbose', 'a b']), ['run', '--file', '/w/app.cs', '--', '--verbose', 'a b']);
+    assert.deepEqual(buildRunArgs('/w/app.cs', ['--verbose'], 'Development'), [
+      'run',
+      '--file',
+      '/w/app.cs',
+      '--launch-profile',
+      'Development',
+      '--',
+      '--verbose',
+    ]);
   });
 
   it('passes optional output folders as discrete arguments', () => {
+    assert.deepEqual(buildPackArgs('/w/app.cs'), ['pack', '/w/app.cs']);
     assert.deepEqual(buildPublishArgs('/w/app.cs'), ['publish', '/w/app.cs']);
     assert.deepEqual(buildPublishArgs('/w/app.cs', '/o u t'), ['publish', '/w/app.cs', '--output', '/o u t']);
     assert.deepEqual(buildConvertArgs('/w/app.cs', '/w/p'), ['project', 'convert', '/w/app.cs', '--output', '/w/p']);
+  });
+
+  it('cleans the file-based app cache with a validated retention period', () => {
+    assert.deepEqual(buildFileAppCacheCleanArgs(30), ['clean', 'file-based-apps', '--days', '30']);
+    assert.deepEqual(buildFileAppCacheCleanArgs(0), ['clean', 'file-based-apps', '--days', '0']);
+    for (const days of [-1, 1.5, Number.MAX_SAFE_INTEGER]) {
+      assert.throws(() => buildFileAppCacheCleanArgs(days), RangeError);
+    }
   });
 
   it('computes the documented default convert and publish folders', () => {
@@ -43,6 +64,13 @@ describe('cliArgs', () => {
     assert.equal(isPublishAotDisabled(analyzeFileAppText('#:property publishaot = False\n').directives), true);
     assert.equal(isPublishAotDisabled(analyzeFileAppText('#:property PublishAot=true\n').directives), false);
     assert.equal(isPublishAotDisabled(analyzeFileAppText('// #:property PublishAot=false\nx();').directives), false);
+  });
+
+  it('detects #:property PackAsTool=false', () => {
+    assert.equal(isPackAsToolDisabled(analyzeFileAppText('#:property PackAsTool=false\nConsole.WriteLine();').directives), true);
+    assert.equal(isPackAsToolDisabled(analyzeFileAppText('#:property packastool = False\n').directives), true);
+    assert.equal(isPackAsToolDisabled(analyzeFileAppText('#:property PackAsTool=true\n').directives), false);
+    assert.equal(isPackAsToolDisabled(analyzeFileAppText('// #:property PackAsTool=false\nx();').directives), false);
   });
 
   describe('parseArgumentString', () => {

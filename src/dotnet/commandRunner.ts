@@ -27,6 +27,8 @@ export interface DotnetCommand {
   /** Focus the terminal so the user can type input (used for runs). */
   readonly focus?: boolean;
   readonly presentation?: CommandPresentation;
+  /** Prevents overlap with every other file-based operation (for global cache maintenance). */
+  readonly exclusive?: boolean;
 }
 
 export interface CommandOutcome {
@@ -53,6 +55,7 @@ interface ProcessHandle {
 export const COMMAND_ENV: Readonly<Record<string, string>> = { DOTNET_NOLOGO: '1' };
 
 const MAX_CAPTURED_OUTPUT = 64 * 1024;
+const EXCLUSIVE_OPERATION_KEY = '\u0000exclusive';
 
 export function fileKey(fsPath: string): string {
   const normalized = path.normalize(fsPath);
@@ -111,9 +114,15 @@ export class DotnetCommandRunner implements vscode.Disposable {
     if (this.running.has(key)) {
       throw new Error(`An operation is already running for ${command.fileUri.fsPath}.`);
     }
+    const conflictingOperation = [...this.running.values()].find((op) => op.command.exclusive);
+    if (conflictingOperation || (command.exclusive && this.running.size > 0)) {
+      const activeName = conflictingOperation?.command.name ?? this.running.values().next().value?.command.name;
+      throw new Error(`Cannot start ${command.name} while ${activeName ?? 'another file-based app operation'} is running.`);
+    }
     if (token?.isCancellationRequested) {
       throw new CancelledError();
     }
+    const operationKey = command.exclusive ? EXCLUSIVE_OPERATION_KEY : key;
     const cwd = path.dirname(command.fileUri.fsPath);
     this.logger.info(`> ${formatCommandLine(command.dotnetPath, command.args)}  (cwd: ${cwd})`);
 
@@ -138,7 +147,7 @@ export class DotnetCommandRunner implements vscode.Disposable {
     })();
 
     const op: RunningOperation = { command, done, terminate };
-    this.running.set(key, op);
+    this.running.set(operationKey, op);
     try {
       const outcome = await done;
       this.logger.info(
@@ -148,7 +157,7 @@ export class DotnetCommandRunner implements vscode.Disposable {
       );
       return outcome;
     } finally {
-      this.running.delete(key);
+      this.running.delete(operationKey);
     }
   }
 
@@ -205,7 +214,7 @@ async function startTask(command: DotnetCommand, cwd: string, folder: vscode.Wor
     echo: true,
     showReuseMessage: true,
   };
-  if (command.action === 'build' || command.action === 'restore' || command.action === 'publish') {
+  if (command.action === 'build' || command.action === 'restore' || command.action === 'publish' || command.action === 'pack') {
     task.group = vscode.TaskGroup.Build;
   }
 

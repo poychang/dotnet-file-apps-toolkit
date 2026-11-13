@@ -21,10 +21,13 @@ export interface ToolkitServices {
 export const COMMANDS = {
   runFile: 'dotnetFileApps.runFile',
   runWithArgs: 'dotnetFileApps.runWithArgs',
+  runWithProfile: 'dotnetFileApps.runWithProfile',
   restore: 'dotnetFileApps.restore',
   build: 'dotnetFileApps.build',
   clean: 'dotnetFileApps.clean',
   publish: 'dotnetFileApps.publish',
+  packAsTool: 'dotnetFileApps.packAsTool',
+  cleanFileAppCache: 'dotnetFileApps.cleanFileAppCache',
   convertToProject: 'dotnetFileApps.convertToProject',
   previewComments: 'dotnetFileApps.previewComments',
   copyTaggedComment: 'dotnetFileApps.copyTaggedComment',

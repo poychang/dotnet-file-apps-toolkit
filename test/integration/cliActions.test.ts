@@ -90,6 +90,63 @@ describe('CLI actions (requires .NET SDK 10+)', function () {
     assertSucceeded(outcome);
   });
 
+  it('runs with a profile from the higher-priority launchSettings.json file', async () => {
+    const appDir = path.join(workspaceDir(), 'launch-profile-app');
+    const propertiesDir = path.join(appDir, 'Properties');
+    const appFile = path.join(appDir, 'launch-profile-app.cs');
+    await fs.mkdir(propertiesDir, { recursive: true });
+    await fs.writeFile(appFile, '#:property PublishAot=false\nConsole.WriteLine("profile");\n');
+    await fs.writeFile(
+      path.join(appDir, 'launch-profile-app.run.json'),
+      '{"profiles":{"FromRunFile":{"commandName":"Project"}}}',
+    );
+    await fs.writeFile(
+      path.join(propertiesDir, 'launchSettings.json'),
+      '{\n  // The conventional file takes precedence.\n  "profiles": { "FromLaunchSettings": { "commandName": "Project" }, },\n}',
+    );
+    try {
+      ui.pick = (items) => items.find((item) => item.label === 'FromLaunchSettings');
+      const outcome = await vscode.commands.executeCommand<Outcome>('dotnetFileApps.runWithProfile', vscode.Uri.file(appFile));
+      assertSucceeded(outcome);
+      assert.deepEqual(ui.errors(), []);
+    } finally {
+      await fs.rm(appDir, { recursive: true, force: true });
+    }
+  });
+
+  it('packs a file-based app as a tool', async () => {
+    const outcome = await vscode.commands.executeCommand<Outcome>('dotnetFileApps.packAsTool', fixtureUri('hello.cs'));
+    assertSucceeded(outcome);
+    assert.deepEqual(ui.errors(), []);
+  });
+
+  it('requires explicit confirmation before cleaning the file-app cache', async () => {
+    ui.input = () => '30';
+    const outcome = await vscode.commands.executeCommand<Outcome>('dotnetFileApps.cleanFileAppCache', fixtureUri('hello.cs'));
+    assert.equal(outcome, undefined);
+    assert.ok(ui.messages.some((message) => message.modal && message.message.toLowerCase().includes('clean file-based app cache')));
+    assert.deepEqual(ui.errors(), []);
+  });
+
+  it('does not clean the global cache while another file-based app is running', async () => {
+    const sleep = fixtureUri('sleep.cs');
+    const running = vscode.commands.executeCommand<Outcome>('dotnetFileApps.runFile', sleep);
+    try {
+      await waitFor(() => api.runner.getRunning(sleep), 10_000, 'sleep.cs to start');
+      ui.input = () => '0';
+      ui.respond = (message) => (message.modal && message.items.includes('Clean Cache') ? 'Clean Cache' : undefined);
+      const outcome = await vscode.commands.executeCommand<Outcome>(
+        'dotnetFileApps.cleanFileAppCache',
+        fixtureUri('hello.cs'),
+      );
+      assert.equal(outcome, undefined);
+      assert.ok(ui.errors().some((message) => message.message.includes('Cannot start Clean File-Based App Cache')));
+    } finally {
+      await api.runner.stop(sleep);
+      assert.equal((await running).cancelled, true);
+    }
+  });
+
   it('allows only one operation per file and can stop the running one', async () => {
     const sleep = fixtureUri('sleep.cs');
     const running = vscode.commands.executeCommand<Outcome>('dotnetFileApps.runFile', sleep);

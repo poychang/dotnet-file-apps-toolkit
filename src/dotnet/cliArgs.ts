@@ -1,11 +1,14 @@
 import * as path from 'node:path';
 import type { FileAppDirective } from './fileAppSignals';
 
-export type DotnetAction = 'run' | 'restore' | 'build' | 'clean' | 'publish' | 'convert';
+export type DotnetAction = 'run' | 'restore' | 'build' | 'clean' | 'publish' | 'pack' | 'convert';
 
 /** `dotnet run --file <file> [-- <appArgs...>]`. `--file` prevents a project in the cwd from being run instead. */
-export function buildRunArgs(file: string, appArgs: readonly string[] = []): string[] {
+export function buildRunArgs(file: string, appArgs: readonly string[] = [], launchProfile?: string): string[] {
   const args = ['run', '--file', file];
+  if (launchProfile) {
+    args.push('--launch-profile', launchProfile);
+  }
   if (appArgs.length > 0) {
     args.push('--', ...appArgs);
   }
@@ -26,6 +29,17 @@ export function buildCleanArgs(file: string): string[] {
 
 export function buildPublishArgs(file: string, outputDir?: string): string[] {
   return outputDir ? ['publish', file, '--output', outputDir] : ['publish', file];
+}
+
+export function buildPackArgs(file: string): string[] {
+  return ['pack', file];
+}
+
+export function buildFileAppCacheCleanArgs(days: number): string[] {
+  if (!Number.isSafeInteger(days) || days < 0 || days > 2_147_483_647) {
+    throw new RangeError('Cache retention days must be a non-negative 32-bit integer.');
+  }
+  return ['clean', 'file-based-apps', '--days', String(days)];
 }
 
 export function buildConvertArgs(file: string, outputDir?: string): string[] {
@@ -50,6 +64,11 @@ export function convertedProjectFile(file: string, outputDir: string): string {
 /** True when the file opts out of Native AOT publishing with `#:property PublishAot=false`. */
 export function isPublishAotDisabled(directives: readonly FileAppDirective[]): boolean {
   return directives.some((d) => d.name.toLowerCase() === 'property' && /^PublishAot\s*=\s*false\s*$/i.test(d.value.trim()));
+}
+
+/** True when the file opts out of being packaged as a .NET tool. */
+export function isPackAsToolDisabled(directives: readonly FileAppDirective[]): boolean {
+  return directives.some((d) => d.name.toLowerCase() === 'property' && /^PackAsTool\s*=\s*false\s*$/i.test(d.value.trim()));
 }
 
 /** A display form of a command line for logs; never executed by a shell. */

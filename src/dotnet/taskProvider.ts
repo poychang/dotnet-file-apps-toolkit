@@ -2,10 +2,10 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { Logger } from '../core/logging';
 import { getSettings } from '../core/settings';
-import { buildBuildArgs, buildCleanArgs, buildPublishArgs, buildRestoreArgs, buildRunArgs } from './cliArgs';
+import { buildBuildArgs, buildCleanArgs, buildPackArgs, buildPublishArgs, buildRestoreArgs, buildRunArgs } from './cliArgs';
 import { COMMAND_ENV, TASK_SOURCE, TASK_TYPE } from './commandRunner';
 
-const TASK_ACTIONS = ['run', 'restore', 'build', 'clean', 'publish'] as const;
+const TASK_ACTIONS = ['run', 'restore', 'build', 'clean', 'publish', 'pack'] as const;
 type TaskAction = (typeof TASK_ACTIONS)[number];
 
 interface FileAppTaskDefinition extends vscode.TaskDefinition {
@@ -50,6 +50,7 @@ export function registerFileAppTaskProvider(logger: Logger): vscode.Disposable {
         build: () => buildBuildArgs(file),
         clean: () => buildCleanArgs(file),
         publish: () => buildPublishArgs(file),
+        pack: () => buildPackArgs(file),
       }[def.action]();
       const execution = new vscode.ProcessExecution(getSettings(folder?.uri).dotnetPath, args, { cwd, env: { ...COMMAND_ENV } });
       const resolved = new vscode.Task(
