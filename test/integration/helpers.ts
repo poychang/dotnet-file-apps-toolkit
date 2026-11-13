@@ -69,6 +69,7 @@ export class UiStub {
   respond: Responder = () => undefined;
   pick: (items: readonly vscode.QuickPickItem[]) => vscode.QuickPickItem | undefined = () => undefined;
   input: (options: vscode.InputBoxOptions | undefined) => string | undefined = () => undefined;
+  saveFile: (options: vscode.SaveDialogOptions | undefined) => vscode.Uri | undefined = () => undefined;
   private readonly originals: Partial<Record<keyof typeof vscode.window, unknown>> = {};
 
   install(): void {
@@ -101,6 +102,7 @@ export class UiStub {
       }
       return value;
     });
+    this.replace(win, 'showSaveDialog', async (options?: vscode.SaveDialogOptions) => this.saveFile(options));
   }
 
   reset(): void {
@@ -108,6 +110,7 @@ export class UiStub {
     this.respond = () => undefined;
     this.pick = () => undefined;
     this.input = () => undefined;
+    this.saveFile = () => undefined;
   }
 
   restore(): void {

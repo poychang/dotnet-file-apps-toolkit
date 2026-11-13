@@ -35,6 +35,8 @@ Use the editor title actions, Command Palette (`.NET File Apps`), or the command
 | Convert to Project… | Create a project folder and keep the original file unchanged |
 | Check .NET SDK | Show the SDK selected for the file's folder |
 | More Actions… | Open the file's action picker |
+| Copy Tagged Comment Body | Copy the exact body at the cursor to the clipboard |
+| Extract Tagged Comment to File… | Confirm and write a dedented standalone file; the body is never executed |
 
 The toolkit prompts before saving unsaved changes by default. Published file-based apps use Native AOT by default; this requires the platform's native toolchain. Add `#:property PublishAot=false` to publish a framework-dependent app instead.
 
@@ -79,6 +81,7 @@ features:
 ```
 
 `/*markdown` supports a rendered hover and a full preview panel. Use **Preview Tagged Comments** from the editor or Command Palette to open the preview.
+The preview's Copy button and the **Copy Tagged Comment Body** command copy the exact source body. **Extract Tagged Comment to File…** uses the normalized body, asks before creating or overwriting a file, and never executes it.
 
 ### Preview screenshots
 

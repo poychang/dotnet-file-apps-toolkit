@@ -7,6 +7,7 @@ import type { DotnetCommandRunner } from '../dotnet/commandRunner';
 import type { FileAppDetector } from '../dotnet/fileAppDetector';
 import { FILE_APPS_DOCS_URL, sdkProbeError, type SdkService } from '../dotnet/sdkService';
 import { resolveTargetUri, validateLocalCSharpFile } from './target';
+import type { TaggedCommentService } from '../comments/taggedCommentService';
 
 export interface ToolkitServices {
   readonly context: vscode.ExtensionContext;
@@ -14,6 +15,7 @@ export interface ToolkitServices {
   readonly sdk: SdkService;
   readonly detector: FileAppDetector;
   readonly runner: DotnetCommandRunner;
+  readonly comments: TaggedCommentService;
 }
 
 export const COMMANDS = {
@@ -25,6 +27,8 @@ export const COMMANDS = {
   publish: 'dotnetFileApps.publish',
   convertToProject: 'dotnetFileApps.convertToProject',
   previewComments: 'dotnetFileApps.previewComments',
+  copyTaggedComment: 'dotnetFileApps.copyTaggedComment',
+  extractTaggedComment: 'dotnetFileApps.extractTaggedComment',
   showActions: 'dotnetFileApps.showActions',
   checkSdk: 'dotnetFileApps.checkSdk',
   openDocs: 'dotnetFileApps.openDocs',

@@ -76,6 +76,16 @@
         "icon": "$(open-preview)"
       },
       {
+        "command": "dotnetFileApps.copyTaggedComment",
+        "title": "%command.copyTaggedComment%",
+        "category": "%category%"
+      },
+      {
+        "command": "dotnetFileApps.extractTaggedComment",
+        "title": "%command.extractTaggedComment%",
+        "category": "%category%"
+      },
+      {
         "command": "dotnetFileApps.showActions",
         "title": "%command.showActions%",
         "category": "%category%",
@@ -163,6 +173,16 @@
         },
         {
           "command": "dotnetFileApps.previewComments",
+          "group": "dotnetFileApps@2",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceExtname =~ /^\\.cs$/i && resource in dotnetFileApps.taggedCommentUris"
+        },
+        {
+          "command": "dotnetFileApps.copyTaggedComment",
+          "group": "dotnetFileApps@2",
+          "when": "config.dotnetFileAppsToolkit.enabled && resourceExtname =~ /^\\.cs$/i && resource in dotnetFileApps.taggedCommentUris"
+        },
+        {
+          "command": "dotnetFileApps.extractTaggedComment",
           "group": "dotnetFileApps@2",
           "when": "config.dotnetFileAppsToolkit.enabled && resourceExtname =~ /^\\.cs$/i && resource in dotnetFileApps.taggedCommentUris"
         },

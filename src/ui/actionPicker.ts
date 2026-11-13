@@ -28,6 +28,8 @@ export function buildActionItems(isFileApp: boolean, running: string | undefined
     item('project', vscode.l10n.t('Convert to Project…'), COMMANDS.convertToProject, 'dotnet project convert'),
     separator(vscode.l10n.t('Comments')),
     item('open-preview', vscode.l10n.t('Preview Tagged Comments'), COMMANDS.previewComments),
+    item('copy', vscode.l10n.t('Copy Tagged Comment Body'), COMMANDS.copyTaggedComment),
+    item('export', vscode.l10n.t('Extract Tagged Comment to File…'), COMMANDS.extractTaggedComment),
     separator(vscode.l10n.t('Toolkit')),
     item('versions', vscode.l10n.t('Check .NET SDK'), COMMANDS.checkSdk, 'dotnet --version'),
     isFileApp

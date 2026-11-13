@@ -47,7 +47,7 @@ export function activate(context: vscode.ExtensionContext): ToolkitApi {
   const previews = new TaggedCommentPreviewManager(context.extensionUri, comments, logger, getHighlighter);
   context.subscriptions.push(comments, markdownDecorations, syntaxHighlights, previews, registerTaggedCommentHover(comments));
 
-  const services: ToolkitServices = { context, logger, sdk, detector, runner };
+  const services: ToolkitServices = { context, logger, sdk, detector, runner, comments };
   registerCoreCommands(services);
   registerActionCommands(services);
   registerActionPicker(services);

@@ -102,7 +102,9 @@ describe('Editor integration', function () {
         assert.ok(contributed.includes(item.command), `${menu} references unknown command ${item.command}`);
         if (menu === 'editor/title' || menu === 'editor/context') {
           assert.match(item.when ?? '', /config\.dotnetFileAppsToolkit\.enabled/, `${menu} ${item.command}`);
-          const key = item.command === 'dotnetFileApps.previewComments' ? TAGGED_KEY : FILE_APP_KEY;
+          const key = ['dotnetFileApps.previewComments', 'dotnetFileApps.copyTaggedComment', 'dotnetFileApps.extractTaggedComment'].includes(item.command)
+            ? TAGGED_KEY
+            : FILE_APP_KEY;
           assert.ok(item.when?.includes(`resource in ${key}`), `${menu} ${item.command} must be gated by ${key}`);
         }
       }

@@ -21,6 +21,7 @@ import {
 import type { CommandOutcome, DotnetCommand } from '../dotnet/commandRunner';
 import type { DetectionResult } from '../dotnet/fileAppDetector';
 import { COMMANDS, registerCommand, type ToolkitServices } from './registerCommands';
+import { registerTaggedCommentActions } from './taggedCommentActions';
 import { resolveTargetUri, validateLocalCSharpFile } from './target';
 
 const LAST_ARGS_STATE_KEY = 'dotnetFileApps.lastArgs';
@@ -475,4 +476,5 @@ export function registerActionCommands(services: ToolkitServices): void {
   registerCommand(services, COMMANDS.clean, (arg) => simpleAction(services, arg, 'clean'));
   registerCommand(services, COMMANDS.publish, (arg) => publish(services, arg));
   registerCommand(services, COMMANDS.convertToProject, (arg) => convertToProject(services, arg));
+  registerTaggedCommentActions(services);
 }

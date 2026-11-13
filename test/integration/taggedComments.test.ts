@@ -1,4 +1,6 @@
 import * as assert from 'node:assert/strict';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { promises as fs } from 'node:fs';
 import * as vscode from 'vscode';
 import type { ToolkitApi } from '../../src/extension';
@@ -251,6 +253,41 @@ describe('Tagged comments', function () {
       await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
     }
     await waitFor(() => validationCodes().length === 0, 10_000, 'validation diagnostic cleared');
+  });
+
+  it('copies tagged bodies and requires confirmation before extracting or overwriting files', async () => {
+    const editor = await open('multi-language-comments.cs');
+    const block = api.comments.getScan(editor.document).blocks.find((candidate) => candidate.language === 'yaml');
+    assert.ok(block);
+    editor.selection = new vscode.Selection(
+      editor.document.positionAt(block.bodyStartOffset + 1),
+      editor.document.positionAt(block.bodyStartOffset + 1),
+    );
+    const suffix = `${process.pid}-${Date.now()}`;
+    const cancelledTarget = vscode.Uri.file(path.join(os.tmpdir(), `tagged-comment-cancel-${suffix}.yaml`));
+    const target = vscode.Uri.file(path.join(os.tmpdir(), `tagged-comment-extract-${suffix}.yaml`));
+    const expected = block.normalizedBody + (/(?:\r\n|\r|\n)$/.test(block.rawBody) ? '\n' : '');
+
+    try {
+      ui.saveFile = () => cancelledTarget;
+      await vscode.commands.executeCommand('dotnetFileApps.extractTaggedComment', editor.document.uri);
+      await assert.rejects(fs.stat(cancelledTarget.fsPath));
+
+      await fs.writeFile(target.fsPath, 'existing content');
+      ui.saveFile = () => target;
+      await vscode.commands.executeCommand('dotnetFileApps.extractTaggedComment', editor.document.uri);
+      assert.equal(await fs.readFile(target.fsPath, 'utf8'), 'existing content');
+
+      ui.respond = (message) => (message.items.includes('Overwrite and Extract') ? 'Overwrite and Extract' : undefined);
+      await vscode.commands.executeCommand('dotnetFileApps.extractTaggedComment', editor.document.uri);
+      assert.equal(await fs.readFile(target.fsPath, 'utf8'), expected);
+
+      await vscode.commands.executeCommand('dotnetFileApps.copyTaggedComment', editor.document.uri);
+      assert.equal(await vscode.env.clipboard.readText(), block.rawBody);
+    } finally {
+      await fs.rm(cancelledTarget.fsPath, { force: true });
+      await fs.rm(target.fsPath, { force: true });
+    }
   });
 
   it('turns everything off when comments are disabled', async () => {
