@@ -19,6 +19,7 @@ export interface ToolkitSettings {
     readonly markdownHover: boolean;
     readonly previewOnOpen: boolean;
     readonly unknownTagDiagnostic: boolean;
+    readonly validationEnabled: boolean;
   };
 }
 
@@ -43,6 +44,7 @@ export function getSettings(scope?: vscode.ConfigurationScope): ToolkitSettings 
       markdownHover: c.get<boolean>('comments.markdown.hover', true),
       previewOnOpen: c.get<boolean>('comments.previewOnOpen', false),
       unknownTagDiagnostic: c.get<boolean>('comments.unknownTagDiagnostic', false),
+      validationEnabled: c.get<boolean>('comments.validation.enabled', false),
     },
   };
 }

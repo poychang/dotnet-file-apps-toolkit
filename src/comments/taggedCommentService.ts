@@ -2,12 +2,14 @@ import * as vscode from 'vscode';
 import type { Logger } from '../core/logging';
 import { getSettings } from '../core/settings';
 import { defaultRegistry } from './embeddedLanguageRegistry';
+import { analyzeStructuredBlock, type StructuredDataResult, type StructuredDataIssue } from './structuredData';
 import { scanTaggedComments, type TaggedCommentScan } from './taggedCommentScanner';
 
 export const TAGGED_COMMENT_URIS_CONTEXT_KEY = 'dotnetFileApps.taggedCommentUris';
 /** Larger documents are not scanned. */
 export const MAX_SCAN_CHARS = 5_000_000;
 const EMPTY_SCAN: TaggedCommentScan = { blocks: [], unknownTags: [], truncated: false };
+const EMPTY_STRUCTURED_DATA: ReadonlyMap<number, StructuredDataResult> = new Map();
 const CHANGE_DELAY_MS = 200;
 
 export function isCSharpDocument(document: vscode.TextDocument): boolean {
@@ -20,6 +22,10 @@ export function isCSharpDocument(document: vscode.TextDocument): boolean {
  */
 export class TaggedCommentService implements vscode.Disposable {
   private readonly cache = new Map<string, { version: number; scan: TaggedCommentScan }>();
+  private readonly structuredDataCache = new Map<
+    string,
+    { version: number; results: ReadonlyMap<number, StructuredDataResult> }
+  >();
   private readonly pending = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly withBlocks = new Set<string>();
   private readonly diagnostics = vscode.languages.createDiagnosticCollection('dotnetFileApps.taggedComments');
@@ -86,6 +92,26 @@ export class TaggedCommentService implements vscode.Disposable {
     return this.withBlocks.has(uri.toString());
   }
 
+  /** Validates YAML and JSON tagged blocks only when the opt-in setting is enabled. */
+  getStructuredData(document: vscode.TextDocument): ReadonlyMap<number, StructuredDataResult> {
+    if (!getSettings(document.uri).comments.validationEnabled) {
+      return EMPTY_STRUCTURED_DATA;
+    }
+    const key = document.uri.toString();
+    const cached = this.structuredDataCache.get(key);
+    if (cached?.version === document.version) {
+      return cached.results;
+    }
+    const results = new Map<number, StructuredDataResult>();
+    for (const block of this.getScan(document).blocks) {
+      if (block.language === 'yaml' || block.language === 'json') {
+        results.set(block.index, analyzeStructuredBlock(block));
+      }
+    }
+    this.structuredDataCache.set(key, { version: document.version, results });
+    return results;
+  }
+
   refreshAll(): void {
     for (const doc of vscode.workspace.textDocuments) {
       this.schedule(doc, 0);
@@ -126,24 +152,62 @@ export class TaggedCommentService implements vscode.Disposable {
   }
 
   private updateDiagnostics(document: vscode.TextDocument, scan: TaggedCommentScan): void {
-    if (scan.unknownTags.length === 0 || !getSettings(document.uri).comments.unknownTagDiagnostic) {
+    const settings = getSettings(document.uri);
+    const diagnostics: vscode.Diagnostic[] = [];
+    if (settings.comments.unknownTagDiagnostic) {
+      const supported = defaultRegistry.allTags().join(', ');
+      diagnostics.push(
+        ...scan.unknownTags.map((u) => {
+          const d = new vscode.Diagnostic(
+            new vscode.Range(document.positionAt(u.tagStartOffset), document.positionAt(u.tagEndOffset)),
+            vscode.l10n.t(
+              'Unknown comment language tag "{0}". This comment is treated as an ordinary comment. Supported tags: {1}.',
+              u.tag,
+              supported,
+            ),
+            vscode.DiagnosticSeverity.Information,
+          );
+          d.source = '.NET File Apps';
+          d.code = 'unknown-comment-tag';
+          return d;
+        }),
+      );
+    }
+    if (settings.comments.validationEnabled) {
+      const structuredData = this.getStructuredData(document);
+      for (const block of scan.blocks) {
+        for (const validationIssue of structuredData.get(block.index)?.issues ?? []) {
+          diagnostics.push(this.validationDiagnostic(document, block.lineMap, block.bodyStartOffset, validationIssue, block.descriptor.displayName));
+        }
+      }
+    }
+    if (diagnostics.length === 0) {
       this.diagnostics.delete(document.uri);
       return;
     }
-    const supported = defaultRegistry.allTags().join(', ');
-    this.diagnostics.set(
-      document.uri,
-      scan.unknownTags.map((u) => {
-        const d = new vscode.Diagnostic(
-          new vscode.Range(document.positionAt(u.tagStartOffset), document.positionAt(u.tagEndOffset)),
-          vscode.l10n.t('Unknown comment language tag "{0}". This comment is treated as an ordinary comment. Supported tags: {1}.', u.tag, supported),
-          vscode.DiagnosticSeverity.Information,
-        );
-        d.source = '.NET File Apps';
-        d.code = 'unknown-comment-tag';
-        return d;
-      }),
+    this.diagnostics.set(document.uri, diagnostics);
+  }
+
+  private validationDiagnostic(
+    document: vscode.TextDocument,
+    lines: TaggedCommentScan['blocks'][number]['lineMap'],
+    bodyStartOffset: number,
+    validationIssue: StructuredDataIssue,
+    language: string,
+  ): vscode.Diagnostic {
+    const sourceLine = lines.length > 0 ? Math.min(lines.length - 1, lineAtOffset(lines, validationIssue.offset)) : -1;
+    const line = sourceLine >= 0 ? lines[sourceLine] : undefined;
+    const column = line ? Math.min(validationIssue.offset - offsetAtLine(lines, sourceLine), line.text.length) : 0;
+    const start = line ? line.sourceOffset + Math.max(0, column) : bodyStartOffset;
+    const end = line ? line.sourceOffset + Math.min(line.text.length, Math.max(column + validationIssue.length, column + 1)) : start;
+    const diagnostic = new vscode.Diagnostic(
+      new vscode.Range(document.positionAt(start), document.positionAt(end)),
+      vscode.l10n.t('Invalid {0}: {1}', language, validationIssue.message),
+      vscode.DiagnosticSeverity.Error,
     );
+    diagnostic.source = '.NET File Apps';
+    diagnostic.code = language === 'YAML' ? 'yaml-validation-error' : 'json-validation-error';
+    return diagnostic;
   }
 
   private forget(document: vscode.TextDocument): void {
@@ -154,6 +218,7 @@ export class TaggedCommentService implements vscode.Disposable {
       this.pending.delete(key);
     }
     this.cache.delete(key);
+    this.structuredDataCache.delete(key);
     this.diagnostics.delete(document.uri);
     if (this.withBlocks.delete(key)) {
       this.publishSoon();
@@ -181,5 +246,25 @@ export class TaggedCommentService implements vscode.Disposable {
       clearTimeout(this.publishTimer);
     }
     this.disposables.forEach((d) => d.dispose());
+    this.structuredDataCache.clear();
   }
+}
+
+function lineAtOffset(lines: TaggedCommentScan['blocks'][number]['lineMap'], offset: number): number {
+  let remaining = Math.max(0, offset);
+  for (let i = 0; i < lines.length; i++) {
+    if (remaining <= lines[i].text.length) {
+      return i;
+    }
+    remaining -= lines[i].text.length + 1;
+  }
+  return Math.max(0, lines.length - 1);
+}
+
+function offsetAtLine(lines: TaggedCommentScan['blocks'][number]['lineMap'], index: number): number {
+  let offset = 0;
+  for (let i = 0; i < index; i++) {
+    offset += lines[i].text.length + 1;
+  }
+  return offset;
 }

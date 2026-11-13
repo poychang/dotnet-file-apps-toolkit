@@ -3,6 +3,7 @@ import { CodeHighlighter } from '../../src/comments/codeHighlighter';
 import { markdownDecorationRanges } from '../../src/comments/markdownSyntax';
 import { createMarkdownRenderer, neutralizeImages } from '../../src/comments/markdownRenderer';
 import { parsePreviewMessage, renderPreview, type PreviewLabels } from '../../src/comments/previewHtml';
+import { analyzeStructuredBlock } from '../../src/comments/structuredData';
 import { mapTokensToSource } from '../../src/comments/syntaxGrammarAdapter';
 import { scanTaggedComments } from '../../src/comments/taggedCommentScanner';
 
@@ -19,6 +20,8 @@ const labels: PreviewLabels = {
   tooLarge: 'Too large',
   noHighlighter: 'No highlighter',
   truncated: (n) => `First ${n}`,
+  structurePreview: 'Structure preview',
+  validationIssues: (count) => `Validation found ${count} issue(s).`,
 };
 
 describe('markdown rendering', () => {
@@ -182,6 +185,44 @@ describe('code highlighting and preview HTML', function () {
       ['8080', '#B5CEA8', '#098658'],
     ]);
     assert.ok(spans.every((s) => s.start >= block.bodyStartOffset && s.end <= block.bodyEndOffset));
+  });
+});
+
+describe('structured data validation', () => {
+  it('validates YAML and JSON and builds bounded structure outlines without scalar values', () => {
+    const scan = scanTaggedComments(
+      ['/*yaml', 'app:', '  name: sample', '*/', '/*json', '{"enabled": true}', '*/'].join('\n'),
+    );
+    const yaml = analyzeStructuredBlock(scan.blocks[0]);
+    const json = analyzeStructuredBlock(scan.blocks[1]);
+
+    assert.deepEqual(yaml.issues, []);
+    assert.equal(yaml.structure?.kind, 'object');
+    assert.equal(yaml.structure?.children?.[0].label, 'app');
+    assert.deepEqual(json.issues, []);
+    assert.equal(json.structure?.children?.[0].label, 'enabled');
+
+    const { html } = renderPreview(scan, {
+      labels,
+      markdown: (source) => source,
+      structuredData: new Map(scan.blocks.map((block) => [block.index, analyzeStructuredBlock(block)])),
+    });
+    assert.match(html, /Structure preview/);
+    assert.match(html, /<code>enabled<\/code>/);
+    assert.doesNotMatch(html, /<code>true<\/code>/);
+  });
+
+  it('reports malformed YAML/JSON with source offsets and does not create structures', () => {
+    const scan = scanTaggedComments(['/*yaml', 'name: [', '*/', '/*json', '{"enabled": }', '*/'].join('\n'));
+    const yaml = analyzeStructuredBlock(scan.blocks[0]);
+    const json = analyzeStructuredBlock(scan.blocks[1]);
+
+    assert.ok(yaml.issues.length > 0);
+    assert.ok(yaml.issues[0].offset > 0);
+    assert.equal(yaml.structure, undefined);
+    assert.ok(json.issues.length > 0);
+    assert.ok(json.issues[0].offset > 0);
+    assert.equal(json.structure, undefined);
   });
 });
 

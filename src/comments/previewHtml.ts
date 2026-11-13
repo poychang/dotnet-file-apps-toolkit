@@ -1,6 +1,7 @@
 import type { CodeHighlighter } from './codeHighlighter';
 import { MAX_HIGHLIGHT_CHARS, tokensToHtml } from './codeHighlighter';
 import { escapeHtml } from './markdownRenderer';
+import type { StructuredDataResult, StructureNode } from './structuredData';
 import type { TaggedCommentBlock, TaggedCommentScan } from './taggedCommentScanner';
 
 export interface PreviewLabels {
@@ -16,12 +17,15 @@ export interface PreviewLabels {
   readonly tooLarge: string;
   readonly noHighlighter: string;
   readonly truncated: (shown: number) => string;
+  readonly structurePreview: string;
+  readonly validationIssues: (count: number) => string;
 }
 
 export interface PreviewRenderContext {
   readonly labels: PreviewLabels;
   readonly markdown: (source: string) => string;
   readonly highlighter?: CodeHighlighter;
+  readonly structuredData?: ReadonlyMap<number, StructuredDataResult>;
   /** Defaults to MAX_HIGHLIGHT_CHARS. */
   readonly maxChars?: number;
 }
@@ -76,10 +80,32 @@ function renderBody(block: TaggedCommentBlock, ctx: PreviewRenderContext): { htm
   }
 }
 
+function renderStructureNode(node: StructureNode): string {
+  const children = node.children?.length
+    ? `<ul>${node.children.map(renderStructureNode).join('')}</ul>`
+    : '';
+  return `<li><code>${escapeHtml(node.label)}</code> <span class="structure-kind">${escapeHtml(node.kind)}</span>${children}</li>`;
+}
+
+function renderStructuredData(result: StructuredDataResult | undefined, labels: PreviewLabels): string {
+  if (!result) {
+    return '';
+  }
+  const issues =
+    result.issues.length > 0
+      ? `<p class="note error">${escapeHtml(labels.validationIssues(result.issues.length))}</p>`
+      : '';
+  const structure = result.structure
+    ? `<details class="structure"><summary>${escapeHtml(labels.structurePreview)}</summary><ul>${renderStructureNode(result.structure)}</ul></details>`
+    : '';
+  return issues + structure;
+}
+
 export function renderBlock(block: TaggedCommentBlock, ctx: PreviewRenderContext): RenderedBlock {
   const { labels } = ctx;
   const i = block.index;
   const body = renderBody(block, ctx);
+  const structuredData = renderStructuredData(ctx.structuredData?.get(i), labels);
   const header = [
     `<span class="badge" id="block-${i}-title">${escapeHtml(block.descriptor.displayName)}</span>`,
     `<button type="button" class="link" data-action="reveal" data-block="${i}" title="${escapeHtml(labels.goToSource)}">${escapeHtml(labels.lines(block.startLine + 1, block.endLine + 1))}</button>`,
@@ -90,7 +116,7 @@ export function renderBlock(block: TaggedCommentBlock, ctx: PreviewRenderContext
   const html =
     `<section class="block mode-${block.mode}" id="block-${i}" data-block="${i}" aria-labelledby="block-${i}-title">` +
     `<header class="block-header">${header}</header>` +
-    `<div class="block-body">${body.html}</div></section>`;
+    `<div class="block-body">${body.html}${structuredData}</div></section>`;
   return { index: i, language: block.language, html, renderer: body.renderer };
 }
 

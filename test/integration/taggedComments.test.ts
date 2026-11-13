@@ -49,7 +49,13 @@ describe('Tagged comments', function () {
 
   after(async () => {
     ui.restore();
-    for (const key of ['comments.enabled', 'comments.markdown.hover', 'comments.highlight.enabled', 'comments.unknownTagDiagnostic']) {
+    for (const key of [
+      'comments.enabled',
+      'comments.markdown.hover',
+      'comments.highlight.enabled',
+      'comments.unknownTagDiagnostic',
+      'comments.validation.enabled',
+    ]) {
       await setSetting(key, undefined);
     }
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
@@ -221,6 +227,30 @@ describe('Tagged comments', function () {
       await setSetting('comments.unknownTagDiagnostic', undefined);
     }
     await waitFor(() => vscode.languages.getDiagnostics(document.uri).length === 0 || undefined, 10_000, 'diagnostic cleared');
+  });
+
+  it('validates YAML and JSON only when opted in and maps errors to source', async () => {
+    await setSetting('comments.validation.enabled', false);
+    const document = await vscode.workspace.openTextDocument({
+      language: 'csharp',
+      content: ['/*json', '{"enabled": }', '*/'].join('\n'),
+    });
+    await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
+    const validationCodes = () =>
+      vscode.languages.getDiagnostics(document.uri).filter((d) => d.code === 'json-validation-error' || d.code === 'yaml-validation-error');
+
+    try {
+      await waitFor(() => validationCodes().length === 0, 10_000, 'validation disabled');
+      await setSetting('comments.validation.enabled', true);
+      const diagnostics = await waitFor(() => (validationCodes().length > 0 ? validationCodes() : undefined), 10_000, 'JSON validation diagnostic');
+      assert.equal(diagnostics.length, 1);
+      assert.equal(document.getText(diagnostics[0].range), '}');
+      assert.equal(diagnostics[0].severity, vscode.DiagnosticSeverity.Error);
+    } finally {
+      await setSetting('comments.validation.enabled', undefined);
+      await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+    }
+    await waitFor(() => validationCodes().length === 0, 10_000, 'validation diagnostic cleared');
   });
 
   it('turns everything off when comments are disabled', async () => {

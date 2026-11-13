@@ -40,6 +40,7 @@
   "config.comments.markdown.hover": "Show a rendered Markdown hover for `/*markdown` comments.",
   "config.comments.previewOnOpen": "Automatically open the tagged comment preview beside C# files that contain tagged comments.",
   "config.comments.unknownTagDiagnostic": "Report an information diagnostic for block comments that look like `/*tag` with an unknown language.",
+  "config.comments.validation.enabled": "Opt in to syntax validation for tagged YAML/JSON comments and an expandable, type-only structure preview. Disabled by default.",
   "taskDefinition.action": "The .NET CLI operation to run for the file-based app.",
   "taskDefinition.file": "Path of the file-based app (.cs). Relative paths are resolved from the workspace folder.",
   "taskDefinition.args": "Application arguments (run only)."

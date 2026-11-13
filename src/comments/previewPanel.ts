@@ -29,6 +29,8 @@ function labels(): PreviewLabels {
     tooLarge: vscode.l10n.t('This block is too large to highlight. Showing plain text.'),
     noHighlighter: vscode.l10n.t('Syntax highlighting is unavailable for this block. Showing plain text.'),
     truncated: (shown) => vscode.l10n.t('Only the first {0} tagged comments are shown.', shown),
+    structurePreview: vscode.l10n.t('Structure preview'),
+    validationIssues: (count) => vscode.l10n.t('Validation found {0} issue(s).', count),
   };
 }
 
@@ -275,7 +277,12 @@ export class TaggedCommentPreviewManager implements vscode.Disposable {
         return highlighter?.highlightToHtml(code, language);
       },
     });
-    const { html, blocks } = renderPreview(this.service.getScan(document), { labels: labels(), markdown, highlighter });
+    const { html, blocks } = renderPreview(this.service.getScan(document), {
+      labels: labels(),
+      markdown,
+      highlighter,
+      structuredData: this.service.getStructuredData(document),
+    });
     return { version, html, blocks };
   }
 

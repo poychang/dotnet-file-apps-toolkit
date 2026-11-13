@@ -111,6 +111,8 @@ Supported tags and aliases:
 
 The preview renders Markdown and syntax-highlighted code using bundled grammars for all listed code tags. In the native C# editor, VS Code's TextMate injection grammar provides embedded scopes when the corresponding language grammar is installed. Depending on the active C# semantic-highlighting provider and theme, color decorations may be used to restore code colors.
 
+YAML/JSON validation is opt-in. Enable `dotnetFileAppsToolkit.comments.validation.enabled` to publish source-mapped syntax diagnostics and add a collapsible structure outline to the preview; the outline shows keys and value types, not scalar values.
+
 ## Settings
 
 | Setting | Default | Description |
@@ -126,6 +128,7 @@ The preview renders Markdown and syntax-highlighted code using bundled grammars 
 | `dotnetFileAppsToolkit.comments.markdown.hover` | `true` | Show rendered Markdown hover. |
 | `dotnetFileAppsToolkit.comments.previewOnOpen` | `false` | Automatically open previews for files with tagged comments. |
 | `dotnetFileAppsToolkit.comments.unknownTagDiagnostic` | `false` | Report unknown language tags as information diagnostics. |
+| `dotnetFileAppsToolkit.comments.validation.enabled` | `false` | Validate tagged YAML/JSON and show an expandable structure preview. |
 
 ## Compatibility and limitations
 

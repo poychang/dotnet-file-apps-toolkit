@@ -312,6 +312,11 @@
           "type": "boolean",
           "default": false,
           "markdownDescription": "%config.comments.unknownTagDiagnostic%"
+        },
+        "dotnetFileAppsToolkit.comments.validation.enabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%config.comments.validation.enabled%"
         }
       }
     },
@@ -389,7 +394,9 @@
     "typescript-eslint": "^8.72.2"
   },
   "dependencies": {
+    "jsonc-parser": "^3.3.1",
     "markdown-it": "15.0.3",
-    "shiki": "4.6.0"
+    "shiki": "4.6.0",
+    "yaml": "^2.9.1"
   }
 }

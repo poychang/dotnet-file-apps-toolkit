@@ -40,6 +40,7 @@
   "config.comments.markdown.hover": "為 `/*markdown` 註解顯示渲染後的 Markdown 暫留提示。",
   "config.comments.previewOnOpen": "開啟含有標記註解的 C# 檔案時，自動在旁邊開啟標記註解預覽。",
   "config.comments.unknownTagDiagnostic": "對看起來像 `/*tag` 但語言未知的區塊註解回報資訊診斷。",
+  "config.comments.validation.enabled": "選擇啟用標記 YAML／JSON 註解的語法驗證與可展開的型別結構預覽。預設停用。",
   "taskDefinition.action": "要對檔案型應用程式執行的 .NET CLI 操作。",
   "taskDefinition.file": "檔案型應用程式（.cs）的路徑。相對路徑以工作區資料夾為基準。",
   "taskDefinition.args": "應用程式參數（僅適用於 run）。"
