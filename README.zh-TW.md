@@ -2,6 +2,20 @@
 
 直接在 Visual Studio Code 執行及管理 .NET 10+ 檔案型應用程式。延伸模組也能辨識 C# 區塊註解中明確標記的語言，提供 Markdown 暫留提示／預覽，以及嵌入程式碼的語法醒目提示。
 
+[介紹網站](https://poychang.github.io/dotnet-file-apps-toolkit/) · [English](./README.md) · [發行紀錄](https://github.com/poychang/dotnet-file-apps-toolkit/releases)
+
+## 安裝
+
+下載最新的 [`dotnet-file-apps-toolkit.vsix`](https://github.com/poychang/dotnet-file-apps-toolkit/releases/latest/download/dotnet-file-apps-toolkit.vsix)，在 VS Code 命令選擇區執行 **Extensions: Install from VSIX…**，選取下載的檔案。也可以在下載資料夾執行：
+
+```sh
+code --install-extension ./dotnet-file-apps-toolkit.vsix
+```
+
+每個 GitHub 正式 Release 都會附上 VSIX、版本說明及 `SHA256SUMS` 校驗檔。首次發行正式版本後，下載連結才會生效；手動更新時，下載新版 VSIX 再安裝即可。
+
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=poychang.dotnet-file-apps-toolkit) 上架後，也可搜尋 `poychang.dotnet-file-apps-toolkit` 安裝。Marketplace 自動發布預設關閉，完成前置設定不代表已經上架。
+
 ## 需求
 
 | 元件 | 需求 |
@@ -157,11 +171,18 @@ npm ci
 npm run lint
 npm run check-types
 npm run test:unit
+npm run test:publishing
 npm run test:integration
 npm run vsix
 ```
 
 Linux 整合測試需要 Xvfb 等顯示伺服器。`npm run test:integration` 會先執行主要測試，再以啟用工作區信任的受限模式執行另一組測試。
+
+### 網站與發布
+
+靜態網站位於 `docs/`。執行 `npm run build:site`，會將網頁與共用圖片整合到 `out/site/`，再使用本機靜態 HTTP 伺服器預覽該目錄；不需要額外框架或依賴。
+
+GitHub Pages 設定、版本標籤發行、Marketplace 發行者註冊與 OIDC Trusted Publishing 操作，請見 [發布指南](./PUBLISHING.md)。網站由 `main` 部署；正式 `vX.Y.Z` 標籤會觸發測試、封裝及 GitHub Release。
 
 ## 授權
 

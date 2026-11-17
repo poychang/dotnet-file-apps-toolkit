@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content=".NET File Apps Toolkit 讓你在 VS Code 執行、建置與管理單一 C# 檔案，並預覽 Markdown 與多語言標記註解。下載 VSIX 即可手動安裝。">
+  <meta name="theme-color" content="#101b24">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content=".NET File Apps Toolkit — 一個 C# 檔案，就能開始。">
+  <meta property="og:description" content="從單檔執行到文件預覽，讓 .NET file-based apps 在 VS Code 裡更好用。">
+  <meta property="og:url" content="https://project.poychang.net/dotnet-file-apps-toolkit/">
+  <meta property="og:image" content="https://project.poychang.net/dotnet-file-apps-toolkit/assets/tagged-comments-preview-dark.png">
+  <link rel="canonical" href="https://project.poychang.net/dotnet-file-apps-toolkit/">
+  <link rel="icon" type="image/png" href="./assets/icon.png">
+  <link rel="stylesheet" href="./styles.css">
+  <title>.NET File Apps Toolkit — 一個 C# 檔案，就能開始。</title>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要內容</a>
+  <header class="site-header container">
+    <a class="brand" href="./" aria-label=".NET File Apps Toolkit 首頁">
+      <img src="./assets/icon.png" width="36" height="36" alt="">
+      <span>.NET File Apps <strong>Toolkit</strong></span>
+    </a>
+    <nav aria-label="主要導覽">
+      <a href="#features">功能</a>
+      <a href="#preview">預覽</a>
+      <a href="#install">安裝</a>
+      <a href="https://github.com/poychang/dotnet-file-apps-toolkit">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero container" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> 為 VS Code 打造的 .NET 單檔工具箱</p>
+        <h1 id="hero-title">一個 C# 檔案，<br><span>就能開始。</span></h1>
+        <p class="lead">把想法寫進 <code>.cs</code>，不用先建立專案。<br>執行、建置、發佈，連同文件預覽，都留在熟悉的編輯器裡。</p>
+        <div class="actions">
+          <a class="button primary" href="https://github.com/poychang/dotnet-file-apps-toolkit/releases/latest/download/dotnet-file-apps-toolkit.vsix">下載最新版 VSIX <span aria-hidden="true">↓</span></a>
+          <a class="button secondary" href="#install">開始使用 <span aria-hidden="true">→</span></a>
+        </div>
+        <p class="hero-note">開源 · MIT 授權 · Windows / macOS / Linux</p>
+      </div>
+      <div class="editor-card" aria-label="單檔 C# 應用程式與註解預覽示意">
+        <div class="editor-bar"><span class="file-tab">C# &nbsp; hello.cs</span><span class="editor-action">▷ &nbsp; Run File</span></div>
+        <pre class="code-sample"><code><span class="code-directive">#:property</span> PublishAot=false
+
+<span class="code-tag">/*markdown</span>
+<span class="code-heading"># Hello, file-based apps!</span>
+
+一個檔案，放進 <span class="code-emphasis">**程式與說明**</span>。
+<span class="code-tag">*/</span>
+
+<span class="code-type">Console</span>.WriteLine(<span class="code-string">"Let's build something."</span>);</code></pre>
+        <div class="inline-preview">
+          <span class="mini-label">MARKDOWN PREVIEW</span>
+          <h2>Hello, file-based apps!</h2>
+          <p>一個檔案，放進 <strong>程式與說明</strong>。</p>
+        </div>
+        <div class="terminal-line"><span aria-hidden="true">❯</span> Let's build something.<span class="terminal-cursor" aria-hidden="true"></span></div>
+        <p class="illustration-note">功能示意；實際畫面請見下方預覽。</p>
+      </div>
+    </section>
+
+    <div class="requirements container" aria-label="系統需求">
+      <span><strong>VS Code</strong> 1.100+</span>
+      <span><strong>.NET SDK</strong> 10.0.100+</span>
+      <span><strong>介面語言</strong> English / 繁體中文</span>
+      <span><strong>原生 C# 編輯體驗</strong> 保持不變</span>
+    </div>
+
+    <section class="section container" id="features" aria-labelledby="features-title">
+      <p class="eyebrow">LESS SETUP. MORE BUILDING.</p>
+      <h2 id="features-title">從小工具，到下一個靈感。</h2>
+      <p class="section-intro">少一點切換，多一點專注。不取代 C# 編輯器，而是補上單檔開發最常用的動作。</p>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <span class="feature-number">01 / EXECUTE</span>
+          <h3>常用指令，一步到位</h3>
+          <p>從標題列或命令選擇區執行、還原、建置及清除檔案；也能傳入參數、選擇啟動設定檔。</p>
+          <code>dotnet run --file hello.cs</code>
+        </article>
+        <article class="feature-card">
+          <span class="feature-number">02 / DOCUMENT</span>
+          <h3>讓註解，也能好好閱讀</h3>
+          <p>在 C# 區塊註解加上語言標記，即可使用 Markdown 暫留提示、同步預覽與程式碼語法醒目提示。</p>
+          <code>/*markdown &nbsp; /*yaml &nbsp; /*json</code>
+        </article>
+        <article class="feature-card">
+          <span class="feature-number">03 / SHIP</span>
+          <h3>需要成長時，再展開</h3>
+          <p>管理套件指示詞、發佈可執行檔、封裝 .NET 工具，或轉換成專案，同時保留原始檔案。</p>
+          <code>#:package PackageName@Version</code>
+        </article>
+      </div>
+      <div class="trust-note"><strong>執行前，先信任。</strong>會啟動 .NET SDK 的命令在受限模式下停用；標記註解只供呈現，不會執行其中的內容。</div>
+    </section>
+
+    <section class="section preview-section" id="preview" aria-labelledby="preview-title">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">CODE + CONTEXT</p>
+            <h2 id="preview-title">程式與文件，不必分開。</h2>
+          </div>
+          <p>原始碼維持可編輯，旁邊是好讀的預覽。<br>深色、淺色主題，都能自在工作。</p>
+        </div>
+        <figure class="screenshot">
+          <a href="./assets/tagged-comments-preview-dark.png" aria-label="開啟深色主題預覽原圖">
+            <img src="./assets/tagged-comments-preview-dark.png" alt="深色主題的標記註解預覽面板，包含 Markdown 文件、語法醒目提示、來源行號及複製按鈕。" loading="lazy" width="1280" height="1800">
+          </a>
+          <figcaption>預覽面板畫面（局部） · 點選圖片可檢視完整原圖</figcaption>
+        </figure>
+        <details class="light-preview">
+          <summary>查看淺色主題</summary>
+          <a href="./assets/tagged-comments-preview-light.png" aria-label="開啟淺色主題預覽原圖"><img src="./assets/tagged-comments-preview-light.png" alt="淺色主題的標記註解預覽面板，包含 Markdown 文件與多語言程式碼區塊。" loading="lazy" width="1280" height="1800"></a>
+        </details>
+        <p class="languages"><strong>18 種語言標記</strong> Markdown · YAML · JSON · SQL · XML · Bash · PowerShell · C# · JavaScript · TypeScript · HTML · CSS · Python · C++ · TOML · INI · Dockerfile · CSV</p>
+        <p class="fine-print">內建文法支援預覽醒目提示；編輯器內的顯示會受 C# 語意醒目提示與主題影響。YAML / JSON 語法驗證需自行啟用。</p>
+      </div>
+    </section>
+
+    <section class="section container" id="install" aria-labelledby="install-title">
+      <p class="eyebrow">READY WHEN YOU ARE.</p>
+      <h2 id="install-title">三個步驟，開始寫。</h2>
+      <div class="install-grid">
+        <ol class="steps">
+          <li><h3>準備環境</h3><p>安裝 <a href="https://code.visualstudio.com/download">VS Code 1.100+</a> 與 <a href="https://dotnet.microsoft.com/download/dotnet/10.0">.NET SDK 10.0.100+</a>。請確認終端機能執行 <code>dotnet --version</code>。</p></li>
+          <li><h3>下載並安裝 VSIX</h3><p><a href="https://github.com/poychang/dotnet-file-apps-toolkit/releases/latest/download/dotnet-file-apps-toolkit.vsix">下載最新正式版</a>，在 VS Code 命令選擇區執行 <strong>Extensions: Install from VSIX…</strong>，選取剛下載的檔案。</p></li>
+          <li><h3>建立檔案，執行！</h3><p>將上方範例儲存為 <code>hello.cs</code>，檢視並信任工作區，再執行 <strong>.NET File Apps: Run File</strong>。使用 <strong>Preview Tagged Comments</strong> 開啟註解預覽。</p></li>
+        </ol>
+        <aside class="install-panel" aria-label="安裝指令與下載資訊">
+          <span class="mini-label">也可以使用 VS CODE CLI</span>
+          <pre><code>code --install-extension ./dotnet-file-apps-toolkit.vsix</code></pre>
+          <p>在 VSIX 所在的資料夾執行此命令。手動安裝後，可從相同下載連結取得後續正式版本，再次安裝以更新。</p>
+          <hr>
+          <a class="text-link" href="https://github.com/poychang/dotnet-file-apps-toolkit/releases/latest">版本說明與 SHA-256 校驗檔 <span aria-hidden="true">↗</span></a>
+          <p class="fine-print">下載連結指向 GitHub 最新正式 Release。若尚未有正式版本，請先查看 <a href="https://github.com/poychang/dotnet-file-apps-toolkit/releases">發行紀錄</a>。</p>
+          <p class="fine-print">Marketplace 上架後，也可搜尋 <code>poychang.dotnet-file-apps-toolkit</code>。目前是否已上架，請以 <a href="https://marketplace.visualstudio.com/items?itemName=poychang.dotnet-file-apps-toolkit">Marketplace 頁面</a>為準。</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section container faq" aria-labelledby="faq-title">
+      <h2 id="faq-title">開始之前的小提醒</h2>
+      <details>
+        <summary>所有 .cs 檔案都會出現執行按鈕嗎？</summary>
+        <p>預設只辨識以 <code>#:</code> 指示詞或 dotnet shebang 開頭的檔案，避免把一般專案檔案誤判為單檔應用程式。也可以調整 File Detection 設定，或對個別檔案手動啟用。</p>
+      </details>
+      <details>
+        <summary>需要 C# Dev Kit 或更高版本的 .NET 嗎？</summary>
+        <p>這個工具箱不取代 C# 語言服務，也不強制依賴 C# Dev Kit。基本檔案型命令需要 .NET SDK 10.0.100+；管理專案參考與格式化功能需要 .NET 11+。進階編輯體驗仍由你安裝的 C# 擴充套件提供。</p>
+      </details>
+      <details>
+        <summary>為什麼發佈可執行檔時需要原生工具鏈？</summary>
+        <p>.NET 檔案型應用程式預設使用 Native AOT 發佈。若不需要 AOT，可加入 <code>#:property PublishAot=false</code> 改用架構相依發佈。</p>
+      </details>
+      <details>
+        <summary>可以在遠端工作區或瀏覽器裡使用嗎？</summary>
+        <p>遠端工作區的命令由遠端擴充套件主機執行，因此該環境必須安裝 .NET SDK。純瀏覽器與虛擬工作區不支援這些 CLI 功能；WSL、SSH 與 Dev Containers 仍需實際環境驗證。</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="site-footer container">
+    <p><strong>.NET File Apps Toolkit</strong><br>小而專注，為單檔開發而生。</p>
+    <nav aria-label="其他資源">
+      <a href="https://github.com/poychang/dotnet-file-apps-toolkit/blob/main/README.zh-TW.md">完整文件</a>
+      <a href="https://github.com/poychang/dotnet-file-apps-toolkit/blob/main/README.md" lang="en">English docs</a>
+      <a href="https://github.com/poychang/dotnet-file-apps-toolkit/issues">回報問題</a>
+      <a href="https://github.com/poychang/dotnet-file-apps-toolkit/blob/main/LICENSE">MIT License</a>
+    </nav>
+    <p class="fine-print">社群開源專案，非 Microsoft 官方產品。本站不使用分析追蹤或第三方字型。</p>
+  </footer>
+</body>
+</html>

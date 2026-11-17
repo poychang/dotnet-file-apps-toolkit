@@ -35,6 +35,7 @@ jobs:
       - run: npm run lint
       - run: npm run check-types
       - run: npm run test:unit
+      - run: npm run test:publishing
 
       - name: Run VS Code integration tests (Linux)
         if: runner.os == 'Linux'

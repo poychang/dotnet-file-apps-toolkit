@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.2.1
+
+- Add a GitHub Pages introduction site with manual VSIX installation instructions and a stable latest-release download link.
+- Add tested, version-tagged GitHub Releases with SHA-256 checksums and opt-in Marketplace OIDC Trusted Publishing.
+- Prepare Marketplace metadata, a PNG icon, and a maintainer publishing guide.
 - Color tagged JSON separators with the editor foreground and matched bracket pairs with the VS Code theme bracket palette, respecting `editor.bracketPairColorization.enabled`.
 - Color `/*markdown` bodies in the C# editor like a `.md` file (headings, emphasis, inline code, links, lists, quotes, fenced code, inline HTML, strikethrough), using the bundled Light+/Dark+ colors. Plain text now uses the editor foreground instead of the comment color. This applies when color decorations are active (`dotnetFileAppsToolkit.comments.highlight.strategy` = `decorations`, or `auto` with C# semantic highlighting).
 - Improve the `/*markdown` hover: tables are drawn with box-drawing borders (wide tables keep the native layout), simple `>` quotes get a theme-colored left bar, and a **Preview Tagged Comments** link opens the full preview. Only that preview command is enabled in the hover; command links and raw HTML in the comment remain inert.

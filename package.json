@@ -2,7 +2,7 @@
   "name": "dotnet-file-apps-toolkit",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "poychang",
   "license": "MIT",
   "repository": {
@@ -12,7 +12,13 @@
   "bugs": {
     "url": "https://github.com/poychang/dotnet-file-apps-toolkit/issues"
   },
-  "homepage": "https://github.com/poychang/dotnet-file-apps-toolkit#readme",
+  "homepage": "https://project.poychang.net/dotnet-file-apps-toolkit/",
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#101b24",
+    "theme": "dark"
+  },
+  "qna": "https://github.com/poychang/dotnet-file-apps-toolkit/issues",
   "engines": {
     "vscode": "^1.100.0"
   },
@@ -25,7 +31,10 @@
     "dotnet",
     "C#",
     "file-based apps",
-    "dotnet run"
+    "dotnet run",
+    "markdown",
+    "syntax highlighting",
+    "single file"
   ],
   "l10n": "./l10n",
   "main": "./dist/extension.js",
@@ -474,7 +483,9 @@
     "compile-tests": "node esbuild.js --tests",
     "test:integration": "npm run compile && npm run compile-tests && vscode-test && node scripts/run-restricted-tests.mjs",
     "test:restricted": "npm run compile && npm run compile-tests && node scripts/run-restricted-tests.mjs",
-    "vsix": "npm run package && vsce package",
+    "vsix": "vsce package",
+    "build:site": "node scripts/build-site.mjs",
+    "test:publishing": "npm run build:site && node --test test/publishing/*.test.mjs",
     "test": "npm run test:unit"
   },
   "devDependencies": {

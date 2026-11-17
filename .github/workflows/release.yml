@@ -1,0 +1,106 @@
+name: Release extension
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Validate release tag and changelog
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" != "tag" ]]; then
+            echo "::error::Select a version tag, not a branch, when dispatching this workflow."
+            exit 1
+          fi
+          node scripts/prepare-release.mjs "$RELEASE_TAG"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run check-types
+      - run: npm run test:unit
+      - run: npm run test:publishing
+      - run: xvfb-run -a npm run test:integration
+      - name: Package the tested extension
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: npm run vsix -- --out out/dotnet-file-apps-toolkit.vsix --githubBranch "$RELEASE_TAG"
+      - name: Create checksum
+        working-directory: out
+        run: sha256sum dotnet-file-apps-toolkit.vsix > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-files
+          path: |
+            out/dotnet-file-apps-toolkit.vsix
+            out/SHA256SUMS
+            out/release-notes.md
+          if-no-files-found: error
+          retention-days: 30
+
+  github-release:
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-files
+          path: release
+      - name: Publish GitHub release
+        working-directory: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          sha256sum --check SHA256SUMS
+          gh release create "$RELEASE_TAG" dotnet-file-apps-toolkit.vsix SHA256SUMS \
+            --verify-tag --title "$RELEASE_TAG" --notes-file release-notes.md
+
+  marketplace:
+    needs: [package, github-release]
+    if: vars.PUBLISH_MARKETPLACE == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    environment: marketplace
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-files
+          path: out
+      - name: Verify the release package
+        working-directory: out
+        run: sha256sum --check SHA256SUMS
+      - name: Publish the same VSIX with Trusted Publishing
+        run: npx --no-install vsce publish --packagePath out/dotnet-file-apps-toolkit.vsix --oidc

@@ -2,6 +2,20 @@
 
 Run and manage .NET 10+ file-based apps directly from Visual Studio Code. The extension also recognizes explicitly tagged C# block comments and provides Markdown hover/preview and syntax highlighting for embedded code.
 
+[Website](https://poychang.github.io/dotnet-file-apps-toolkit/) · [繁體中文](./README.zh-TW.md) · [Releases](https://github.com/poychang/dotnet-file-apps-toolkit/releases)
+
+## Installation
+
+Download the latest [`dotnet-file-apps-toolkit.vsix`](https://github.com/poychang/dotnet-file-apps-toolkit/releases/latest/download/dotnet-file-apps-toolkit.vsix), then run **Extensions: Install from VSIX...** in the VS Code Command Palette. Alternatively, run this from the download directory:
+
+```sh
+code --install-extension ./dotnet-file-apps-toolkit.vsix
+```
+
+Each stable GitHub Release includes the VSIX, release notes, and `SHA256SUMS`. The download link becomes available after the first stable release. Repeat the installation with a newer VSIX to update manually.
+
+Once published to the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=poychang.dotnet-file-apps-toolkit), you can also install by searching for `poychang.dotnet-file-apps-toolkit`. The repository's Marketplace workflow is opt-in; a prepared manifest does not mean the listing is already live.
+
 ## Requirements
 
 | Component | Requirement |
@@ -173,11 +187,18 @@ npm ci
 npm run lint
 npm run check-types
 npm run test:unit
+npm run test:publishing
 npm run test:integration
 npm run vsix
 ```
 
 Linux integration tests require a display server such as Xvfb. `npm run test:integration` runs the main suite, then a separate suite in Restricted Mode with workspace trust enabled.
+
+### Website and publishing
+
+The static website lives in `docs/`. Run `npm run build:site` to stage it with shared images in `out/site/`, then serve that directory with a local static HTTP server. No framework or additional dependencies are required.
+
+See [PUBLISHING.md](./PUBLISHING.md) for GitHub Pages setup, version-tag releases, Marketplace publisher registration, and OIDC Trusted Publishing. Website changes deploy from `main`; stable `vX.Y.Z` tags build tested VSIX releases.
 
 ## License
 
