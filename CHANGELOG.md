@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Color tagged JSON separators with the editor foreground and matched bracket pairs with the VS Code theme bracket palette, respecting `editor.bracketPairColorization.enabled`.
+- Color `/*markdown` bodies in the C# editor like a `.md` file (headings, emphasis, inline code, links, lists, quotes, fenced code, inline HTML, strikethrough), using the bundled Light+/Dark+ colors. Plain text now uses the editor foreground instead of the comment color. This applies when color decorations are active (`dotnetFileAppsToolkit.comments.highlight.strategy` = `decorations`, or `auto` with C# semantic highlighting).
+
 ## 0.2.0
 
 - Add tagged-comment support for JavaScript, TypeScript, HTML, CSS, Python, C++, TOML, INI, Dockerfile, and CSV.

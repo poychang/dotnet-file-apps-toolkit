@@ -56,6 +56,20 @@ describe('Tagged comment syntax highlighting', function () {
     return (applied(document)?.ranges ?? []).map((r) => document.getText(r.range));
   }
 
+  /** Decorations must stay on single lines inside tagged bodies; C# code and ordinary comments are never touched. */
+  function assertInsideTaggedBodies(document: vscode.TextDocument, result: AppliedSyntaxHighlight): void {
+    const scan = api.comments.getScan(document);
+    for (const { range } of result.ranges) {
+      const start = document.offsetAt(range.start);
+      const end = document.offsetAt(range.end);
+      assert.ok(
+        scan.blocks.some((b) => start >= b.bodyStartOffset && end <= b.bodyEndOffset),
+        `Range "${document.getText(range)}" is outside tagged comment bodies`,
+      );
+      assert.equal(range.start.line, range.end.line);
+    }
+  }
+
   /** Waits for the applied state to match; with `refresh`, re-resolves the mode about once a second. */
   function waitForApplied(
     document: vscode.TextDocument,
@@ -87,6 +101,7 @@ describe('Tagged comment syntax highlighting', function () {
       await setSetting(key, undefined);
     }
     await vscode.workspace.getConfiguration('editor').update('semanticHighlighting.enabled', undefined, vscode.ConfigurationTarget.Workspace);
+    await vscode.workspace.getConfiguration('editor').update('bracketPairColorization.enabled', undefined, vscode.ConfigurationTarget.Workspace);
   });
 
   after(async () => {
@@ -167,16 +182,7 @@ describe('Tagged comment syntax highlighting', function () {
     await setSetting('comments.highlight.strategy', 'decorations');
     const result = await waitForApplied(document, (a) => a.mode === 'decorations' && a.ranges.length > 0, 'decorations');
 
-    const scan = api.comments.getScan(document);
-    for (const { range } of result.ranges) {
-      const start = document.offsetAt(range.start);
-      const end = document.offsetAt(range.end);
-      assert.ok(
-        scan.blocks.some((b) => start >= b.bodyStartOffset && end <= b.bodyEndOffset),
-        `Range "${document.getText(range)}" is outside tagged comment bodies`,
-      );
-      assert.equal(range.start.line, range.end.line);
-    }
+    assertInsideTaggedBodies(document, result);
     const styleOf = (text: string) => result.ranges.find((r) => document.getText(r.range) === text)?.style;
     assert.deepEqual(styleOf('name'), { light: '#800000', dark: '#569CD6', fontStyle: 0 });
     assert.equal(styleOf('"enabled"')?.dark, '#9CDCFE');
@@ -187,10 +193,75 @@ describe('Tagged comment syntax highlighting', function () {
     await waitForApplied(document, (a) => a.mode === 'off' && a.ranges.length === 0, 'decorations to be removed');
   });
 
+  it('colors JSON brackets with the VS Code bracket palette and separators with the editor foreground', async () => {
+    const { document } = await open('tagged-yaml-json-sql.cs');
+    const styleAt = (result: AppliedSyntaxHighlight, offset: number) =>
+      result.ranges.find(({ range }) => {
+        const start = document.offsetAt(range.start);
+        const end = document.offsetAt(range.end);
+        return start <= offset && offset < end;
+      })?.style;
+
+    await setSetting('comments.highlight.strategy', 'decorations');
+    let result = await waitForApplied(document, (a) => a.mode === 'decorations' && a.ranges.length > 0, 'JSON decorations');
+    const bodyStart = document.getText().indexOf('/*json');
+    const openOffset = document.getText().indexOf('{', bodyStart);
+    const close = document.getText().indexOf('}', openOffset);
+    const colon = document.getText().indexOf(':', openOffset);
+    const comma = document.getText().indexOf(',', colon);
+    assert.equal(styleAt(result, openOffset)?.themeColor, 'editorBracketHighlight.foreground1');
+    assert.equal(styleAt(result, close)?.themeColor, 'editorBracketHighlight.foreground1');
+    assert.ok(styleAt(result, colon)?.foreground, 'colon uses the editor foreground');
+    assert.ok(styleAt(result, comma)?.foreground, 'comma uses the editor foreground');
+
+    await setSetting('comments.highlight.strategy', 'injection');
+    result = await waitForApplied(document, (a) => a.mode === 'injection' && a.ranges.length > 0, 'JSON delimiter decorations in injection mode');
+    assert.equal(styleAt(result, openOffset)?.themeColor, 'editorBracketHighlight.foreground1');
+    assert.ok(styleAt(result, colon)?.foreground);
+    assert.ok(styleAt(result, comma)?.foreground);
+
+    await vscode.workspace.getConfiguration('editor').update('bracketPairColorization.enabled', false, vscode.ConfigurationTarget.Workspace);
+    await waitForApplied(
+      document,
+      (a) => a.mode === 'injection' && styleAt(a, openOffset)?.foreground === true,
+      'JSON bracket colors to follow the editor setting',
+    );
+    await vscode.workspace.getConfiguration('editor').update('bracketPairColorization.enabled', undefined, vscode.ConfigurationTarget.Workspace);
+    await waitForApplied(
+      document,
+      (a) => a.mode === 'injection' && styleAt(a, openOffset)?.themeColor === 'editorBracketHighlight.foreground1',
+      'JSON bracket colors to be restored',
+    );
+
+    await setSetting('comments.highlight.strategy', 'off');
+    await waitForApplied(document, (a) => a.mode === 'off' && a.ranges.length === 0, 'JSON decorations to be removed');
+  });
+
+  it('colors Markdown bodies like a .md file and paints plain text with the editor foreground', async () => {
+    const { document } = await open('tagged-markdown.cs');
+    await setSetting('comments.highlight.strategy', 'decorations');
+    const result = await waitForApplied(document, (a) => a.mode === 'decorations' && a.ranges.length > 0, 'Markdown decorations');
+
+    assertInsideTaggedBodies(document, result);
+    const styleOf = (text: string) => result.ranges.find((r) => document.getText(r.range) === text)?.style;
+    assert.deepEqual(styleOf('# Inventory Utility'), { light: '#800000', dark: '#569CD6', fontStyle: 2 });
+    assert.equal(styleOf('**inventory**')?.dark, '#569CD6');
+    assert.equal(styleOf('`dotnet run --file tagged-markdown.cs`')?.dark, '#CE9178');
+    assert.equal(styleOf('-')?.dark, '#6796E6');
+    assert.equal(styleOf('mode')?.dark, '#569CD6', 'YAML inside a Markdown fence');
+    const plain = styleOf('This application validates ');
+    assert.ok(plain?.foreground && !plain.light && !plain.dark, 'plain text uses the editor foreground');
+    assert.ok(!decoratedTexts(document).some((t) => t.includes('Console')), 'C# code stays untouched');
+
+    await setSetting('comments.highlight.strategy', 'off');
+    await waitForApplied(document, (a) => a.mode === 'off' && a.ranges.length === 0, 'Markdown decorations to be removed');
+  });
+
   it('switches auto mode to decorations when a C# semantic tokens provider appears', async () => {
     const { document } = await open('tagged-yaml-json-sql.cs');
     const injected = await waitForApplied(document, (a) => a.mode === 'injection', 'injection mode', true);
-    assert.equal(injected.ranges.length, 0);
+    assert.ok(injected.ranges.length > 0, 'JSON delimiters are corrected even in injection mode');
+    assert.ok(injected.ranges.every(({ style }) => style.foreground || style.themeColor), 'only JSON delimiter colors are decorated');
 
     const provider = registerFakeCSharpSemanticTokens();
     try {
@@ -198,7 +269,12 @@ describe('Tagged comment syntax highlighting', function () {
     } finally {
       provider.dispose();
     }
-    await waitForApplied(document, (a) => a.mode === 'injection' && a.ranges.length === 0, 'injection after the provider was removed', true);
+    await waitForApplied(
+      document,
+      (a) => a.mode === 'injection' && a.ranges.length > 0 && a.ranges.every(({ style }) => style.foreground || style.themeColor),
+      'injection after the provider was removed',
+      true,
+    );
   });
 
   it('follows edits to the document', async () => {

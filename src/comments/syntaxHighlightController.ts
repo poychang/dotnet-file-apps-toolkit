@@ -1,8 +1,17 @@
 import * as vscode from 'vscode';
 import type { Logger } from '../core/logging';
 import { getSettings } from '../core/settings';
-import type { CodeHighlighter, StyledToken, TokenStyle } from './codeHighlighter';
-import { mapTokensToSource, type SourceStyledSpan } from './syntaxGrammarAdapter';
+import {
+  FONT_BOLD,
+  FONT_ITALIC,
+  FONT_STRIKETHROUGH,
+  FONT_UNDERLINE,
+  type CodeHighlighter,
+  type StyledToken,
+  type TokenStyle,
+} from './codeHighlighter';
+import { jsonBracketPairTokens } from './jsonBracketPairs';
+import { mapTokensToSource, overlayTokenStyles, type SourceStyledSpan } from './syntaxGrammarAdapter';
 import { isCSharpDocument, type TaggedCommentService } from './taggedCommentService';
 
 /** How tagged code comments are colored in a C# editor. */
@@ -12,9 +21,6 @@ export type SyntaxHighlightMode = 'off' | 'injection' | 'decorations';
 export const MAX_SPANS_PER_EDITOR = 20_000;
 const TOKEN_CACHE_SIZE = 200;
 const LATE_PROVIDER_RECHECK_MS = 5000;
-const FONT_ITALIC = 1;
-const FONT_BOLD = 2;
-const FONT_UNDERLINE = 4;
 
 /** C# extensions whose language server paints `comment` semantic tokens over TextMate colors. */
 const KNOWN_CSHARP_EXTENSIONS = ['ms-dotnettools.csharp', 'ms-dotnettools.csdevkit', 'muhammad-sammy.csharp'];
@@ -31,6 +37,12 @@ export interface AppliedSyntaxHighlight {
 
 function decorationOptions(style: TokenStyle): vscode.DecorationRenderOptions {
   const options: vscode.DecorationRenderOptions = {
+    // The theme-specific colors below override this one; it only covers a theme without its own color.
+    color: style.themeColor
+      ? new vscode.ThemeColor(style.themeColor)
+      : style.foreground
+        ? new vscode.ThemeColor('editor.foreground')
+        : undefined,
     light: style.light ? { color: style.light } : undefined,
     dark: style.dark ? { color: style.dark } : undefined,
     rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
@@ -41,8 +53,14 @@ function decorationOptions(style: TokenStyle): vscode.DecorationRenderOptions {
   if (style.fontStyle & FONT_BOLD) {
     options.fontWeight = 'bold';
   }
-  if (style.fontStyle & FONT_UNDERLINE) {
-    options.textDecoration = 'underline';
+  const textDecoration = [
+    style.fontStyle & FONT_UNDERLINE ? 'underline' : '',
+    style.fontStyle & FONT_STRIKETHROUGH ? 'line-through' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  if (textDecoration) {
+    options.textDecoration = textDecoration;
   }
   return options;
 }
@@ -52,11 +70,14 @@ function isHighContrast(kind: vscode.ColorThemeKind): boolean {
 }
 
 /**
- * Colors the bodies of tagged code comments (`/*yaml`, `/*json`, ...) with editor decorations when the
- * static TextMate injection grammar is not enough. Semantic highlighting from a C# language server
- * paints `comment` tokens over TextMate scopes, so in `auto` mode the bundled highlighter's Light+/Dark+
- * colors are applied as decorations whenever a semantic tokens provider for C# is (or will be) present.
- * Only tagged body ranges are decorated; C# code and ordinary comments are never touched.
+ * Colors the bodies of tagged comments (`/*yaml`, `/*json`, `/*markdown`, ...) with editor decorations
+ * when the static TextMate injection grammar is not enough. Semantic highlighting from a C# language
+ * server paints `comment` tokens over TextMate scopes, so in `auto` mode the bundled highlighter's
+ * Light+/Dark+ colors are applied as decorations whenever a semantic tokens provider for C# is (or will
+ * be) present. Markdown has no injection grammar and is colored like a `.md` file: headings, emphasis,
+ * code, links, lists and quotes get their Light+/Dark+ colors and plain text is painted with the editor
+ * foreground instead of the comment color. Only tagged body ranges are decorated; C# code and ordinary
+ * comments are never touched.
  */
 export class SyntaxHighlightController implements vscode.Disposable {
   private readonly types = new Map<string, vscode.TextEditorDecorationType>();
@@ -80,7 +101,7 @@ export class SyntaxHighlightController implements vscode.Disposable {
       vscode.window.onDidChangeActiveColorTheme(() => this.refresh()),
       vscode.extensions.onDidChange(() => this.refresh()),
       vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('editor.semanticHighlighting')) {
+        if (e.affectsConfiguration('editor.semanticHighlighting') || e.affectsConfiguration('editor.bracketPairColorization.enabled')) {
           this.refresh();
         }
       }),
@@ -148,22 +169,31 @@ export class SyntaxHighlightController implements vscode.Disposable {
   private async updateAsync(editor: vscode.TextEditor, generation: number): Promise<void> {
     const document = editor.document;
     const mode = await this.resolveMode(document);
-    const blocks = this.service.getScan(document).blocks.filter((b) => b.mode === 'code');
+    const blocks = this.service.getScan(document).blocks.filter((b) => b.descriptor.previewLanguage);
     const highlighter = mode === 'decorations' && blocks.length > 0 ? await this.getHighlighter() : undefined;
     if (this.disposed || this.generations.get(editor) !== generation || document.isClosed) {
       return;
     }
     // Rescan after the awaits so offsets match the current document version.
     const spans: SourceStyledSpan[] = [];
-    if (highlighter) {
+    if (mode !== 'off') {
+      const colorJsonBrackets = vscode.workspace
+        .getConfiguration('editor', document)
+        .get<boolean>('bracketPairColorization.enabled', true);
       for (const block of this.service.getScan(document).blocks) {
         const language = block.descriptor.previewLanguage;
-        if (block.mode !== 'code' || !language) {
-          continue;
-        }
-        const lines = this.tokenize(highlighter, block.normalizedBody, language);
-        if (lines) {
-          spans.push(...mapTokensToSource(block.lineMap, lines, MAX_SPANS_PER_EDITOR - spans.length));
+        const jsonTokens = block.language === 'json' ? jsonBracketPairTokens(block.lineMap, colorJsonBrackets) : undefined;
+        if (highlighter && language) {
+          const paintDefault = block.mode === 'document' || block.language === 'json';
+          let lines = this.tokenize(highlighter, block.normalizedBody, language, paintDefault);
+          if (lines && jsonTokens) {
+            lines = overlayTokenStyles(lines, jsonTokens);
+          }
+          if (lines) {
+            spans.push(...mapTokensToSource(block.lineMap, lines, MAX_SPANS_PER_EDITOR - spans.length));
+          }
+        } else if (jsonTokens) {
+          spans.push(...mapTokensToSource(block.lineMap, jsonTokens, MAX_SPANS_PER_EDITOR - spans.length));
         }
         if (spans.length >= MAX_SPANS_PER_EDITOR) {
           break;
@@ -186,8 +216,9 @@ export class SyntaxHighlightController implements vscode.Disposable {
     }, LATE_PROVIDER_RECHECK_MS);
   }
 
-  private tokenize(highlighter: CodeHighlighter, body: string, language: string): StyledToken[][] | undefined {
-    const key = `${language}\0${body}`;
+  /** `paintDefault` is for prose (document mode): plain text is returned too, to be painted with the editor foreground. */
+  private tokenize(highlighter: CodeHighlighter, body: string, language: string, paintDefault: boolean): StyledToken[][] | undefined {
+    const key = `${paintDefault ? 'prose' : 'code'}\0${language}\0${body}`;
     if (this.tokenCache.has(key)) {
       const cached = this.tokenCache.get(key);
       this.tokenCache.delete(key);
@@ -196,7 +227,7 @@ export class SyntaxHighlightController implements vscode.Disposable {
     }
     let lines: StyledToken[][] | undefined;
     try {
-      lines = highlighter.tokenizeStyles(body, language);
+      lines = highlighter.tokenizeStyles(body, language, paintDefault);
     } catch (err) {
       this.logger.warn(`Tokenizing a /*${language} comment failed: ${err}`);
     }

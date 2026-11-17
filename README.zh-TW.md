@@ -106,7 +106,7 @@ features:
 | PowerShell | `powershell`、`ps1` |
 | C# | `csharp`、`cs` |
 
-預覽面板會渲染 Markdown，並為程式碼套用語法醒目提示。在原生 C# 編輯器中，VS Code 的 TextMate 注入文法會提供嵌入語法範圍；依使用中的 C# 語意醒目提示提供者與佈景主題，可能會另外套用顏色裝飾以還原程式碼顏色。
+預覽面板會渲染 Markdown，並為程式碼套用語法醒目提示。在原生 C# 編輯器中，VS Code 的 TextMate 注入文法會提供嵌入語法範圍；依使用中的 C# 語意醒目提示提供者與佈景主題，可能會另外套用顏色裝飾，以還原程式碼顏色，並讓 `/*markdown` 內容呈現類似 `.md` 檔案的配色（一般文字使用編輯器前景色，而非註解顏色）。
 
 ## 設定
 
@@ -141,6 +141,8 @@ features:
 
 - TextMate 注入文法是靜態的 VS Code 貢獻項目，無法透過本延伸模組設定停用，包括 `comments.enabled`、`highlight.enabled` 與策略 `off`；這些設定只控制延伸模組自己的裝飾與預覽行為。
 - `auto` 在高對比佈景主題或停用語意醒目提示時使用注入文法。存在 C# 語意 token 提供者時，可能會加上內建的 Light+/Dark+ 顏色裝飾；這些顏色不會依所有自訂佈景主題調整。
+- `/*markdown` 內容只有透過顏色裝飾才會呈現 `.md` 風格的配色（標題、強調、行內程式碼、連結、清單、引用、程式碼區塊與行內 HTML）：策略為 `decorations`，或 `auto` 且存在 C# 語意 token 提供者或 C# 擴充套件。否則內容維持註解顏色，只套用粗體、斜體、行內程式碼與連結強調（策略為 `off` 時則完全不套用）。
+- 標記 JSON 的結構分隔符使用編輯器前景色，且匹配的 `{}`、`[]` 會套用佈景主題的括號配對色。此行為在 `injection` 策略也會生效，並遵循 `editor.bracketPairColorization.enabled`；不會改變註解內的 JSON 編輯行為。
 - 原生注入文法不會標記與結尾 `*/` 同一行的註解內容；預覽及裝飾仍可醒目提示該內容。
 - .NET SDK/MSBuild 目前不接受部分特殊檔名字元，包括 `;`、`%` 與 `'`。空格與 Unicode 檔名可用；shell 中繼字元會以不經 shell 展開的方式傳遞。
 - Native AOT 發佈需要原生工具鏈（Windows 需要 Visual Studio「使用 C++ 的桌面開發」工作負載）。可用 `PublishAot=false` 避免此需求。

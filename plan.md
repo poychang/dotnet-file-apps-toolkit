@@ -73,7 +73,7 @@ For 0.1.0, the opening tag should be alone on the opening line; optional horizon
 
 ### 2.2 Two rendering modes, one shared parser
 
-- **Document mode (`markdown`, `md`):** Editor decorations for headings/emphasis/lists; `MarkdownString` hover; synchronized rich HTML preview for headings, tables, links, lists, code fences, etc. Native editor source text remains visible/editable; full HTML does not render in place.
+- **Document mode (`markdown`, `md`):** Editor decorations that color the body like a `.md` file (bundled Markdown grammar, Light+/Dark+) plus a regex emphasis fallback for headings/emphasis/lists; `MarkdownString` hover; synchronized rich HTML preview for headings, tables, links, lists, code fences, etc. Native editor source text remains visible/editable; full HTML does not render in place.
 - **Code mode (`yaml`, `json`, `sql`, etc.):** Syntax highlighting **inside the comment body** using a VS Code TextMate injection grammar where practical. A preview shows the extracted body as theme-aware syntax-highlighted code, with a copy-content and jump-to-source affordance. Preview is not a Markdown-rendered document.
 - **Language-specific optional mode:** YAML/JSON syntax validation or tree view may be considered later, separately from rendering. No schema validation, auto-formatting, or execution occurs implicitly.
 
@@ -195,7 +195,7 @@ Language coverage plan:
 
 | Phase | Canonical language (accepted aliases) | Editor behavior | Preview behavior |
 | --- | --- | --- | --- |
-| MVP | Markdown (`markdown`, `md`) | Heading/emphasis/list decorations; experimental grammar injection | Rich Markdown HTML |
+| MVP | Markdown (`markdown`, `md`) | `.md`-style color decorations (Light+/Dark+) and heading/emphasis/list decorations; experimental grammar injection | Rich Markdown HTML |
 | MVP | YAML (`yaml`, `yml`) | YAML syntax highlighting | Highlighted YAML |
 | MVP | JSON (`json`) | JSON syntax highlighting | Highlighted JSON |
 | MVP | SQL (`sql`) | SQL syntax highlighting | Highlighted SQL |
@@ -254,7 +254,7 @@ var sample = "/*json\n{ \"not\": \"a real comment\" }\n*/";
 
 - **Primary:** contribute static TextMate injection grammar(s) to C# `source.cs`, with separate rules for language tags. Reuse existing grammar scopes only after checking actual availability/licensing and VS Code version. Keep keyword/token scope mapping theme-friendly, rather than hard-coded foreground colors.
 - **Fallback:** use a bundled tokenizer/highlighter on extracted source (e.g., grammar-backed), translate tokens into coalesced `vscode.Range`s and a small reusable set of `TextEditorDecorationType`s. Apply only to tagged body ranges; clip large files / cap tokens; do not overwrite C# code outside the comment.
-- **Markdown decorations:** emphasize headings, links, emphasis, list prefixes; do not conceal source punctuation or fake rich multiline layout inside ordinary text editor.
+- **Markdown decorations:** emphasize headings, links, emphasis, list prefixes; do not conceal source punctuation or fake rich multiline layout inside ordinary text editor. In `decorations` mode also tokenize the body with the bundled `markdown` grammar (Light+/Dark+) and paint plain prose with `editor.foreground`, so semantic comment colors do not leak into it; the emphasis layer stays as the fallback for the other strategies.
 - **Semantic highlighting:** verify C# language server tokens do not paint over injected comment scopes; document degraded behavior if semantic and injected scopes conflict. Use preview as guaranteed full-syntax presentation.
 - **No implicit behavior:** no execution, file writes, package installation, schema downloads, IntelliSense promises, or automatic conversion of comment contents.
 

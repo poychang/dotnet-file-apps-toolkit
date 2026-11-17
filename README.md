@@ -119,7 +119,7 @@ Supported tags and aliases:
 | Dockerfile | `dockerfile`, `docker` |
 | CSV | `csv` |
 
-The preview renders Markdown and syntax-highlighted code using bundled grammars for all listed code tags. In the native C# editor, VS Code's TextMate injection grammar provides embedded scopes when the corresponding language grammar is installed. Depending on the active C# semantic-highlighting provider and theme, color decorations may be used to restore code colors.
+The preview renders Markdown and syntax-highlighted code using bundled grammars for all listed code tags. In the native C# editor, VS Code's TextMate injection grammar provides embedded scopes when the corresponding language grammar is installed. Depending on the active C# semantic-highlighting provider and theme, color decorations may be used to restore code colors and to color `/*markdown` bodies like a `.md` file (plain text uses the editor foreground instead of the comment color).
 
 YAML/JSON validation is opt-in. Enable `dotnetFileAppsToolkit.comments.validation.enabled` to publish source-mapped syntax diagnostics and add a collapsible structure outline to the preview; the outline shows keys and value types, not scalar values.
 
@@ -157,6 +157,8 @@ Additional notes:
 
 - The TextMate injection grammar is a static VS Code contribution. It cannot be disabled by this extension's settings, including `comments.enabled`, `highlight.enabled`, and strategy `off`; those settings control the extension's own decorations and preview behavior.
 - `auto` chooses injection for high-contrast themes and when semantic highlighting is disabled. When a C# semantic token provider is present, it may add bundled Light+/Dark+ color decorations. Those colors are not derived from every user's custom theme.
+- `/*markdown` bodies get `.md`-style colors (headings, emphasis, inline code, links, lists, quotes, fenced code, inline HTML) only through color decorations: strategy `decorations`, or `auto` with a C# semantic token provider or C# extension. Otherwise the body keeps the comment color and only gets bold, italic, inline-code, and link emphasis (none with strategy `off`).
+- Tagged JSON uses the editor foreground for structural separators and the theme's bracket-pair colors for matched `{}` and `[]` pairs. This also applies in `injection` mode, follows `editor.bracketPairColorization.enabled`, and does not change JSON editing behavior inside the comment.
 - Content on the same line as the closing `*/` is not included by the native injection grammar; the preview and decorations can still highlight it.
 - The .NET SDK/MSBuild currently rejects some special characters in source file names, including `;`, `%`, and `'`. Spaces and Unicode names are supported; shell metacharacters are passed without shell expansion.
 - Native AOT publishing needs a native toolchain (on Windows, Visual Studio's **Desktop development with C++** workload). Use `PublishAot=false` to avoid it.

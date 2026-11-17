@@ -12,7 +12,8 @@ const KINDS: readonly MarkdownDecorationKind[] = ['bold', 'italic', 'code', 'lin
  * Adds emphasis to `/*markdown` comment bodies in the native editor: headings, bold and list/quote markers
  * in bold, italics, inline code background and underlined links. Only font style, background and
  * underline are used so the theme's (or the injected grammar's) colors stay intact and no source
- * characters are hidden.
+ * characters are hidden. In `decorations` mode the syntax highlight controller additionally paints
+ * `.md`-style colors over the body; this layer stays the emphasis-only fallback for the other strategies.
  */
 export class MarkdownDecorationController implements vscode.Disposable {
   private readonly types: Record<MarkdownDecorationKind, vscode.TextEditorDecorationType>;

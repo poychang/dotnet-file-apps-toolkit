@@ -9,9 +9,10 @@ import { escapeHtml } from './markdownRenderer';
 
 const LIGHT_THEME = 'light-plus';
 const DARK_THEME = 'dark-plus';
-const FONT_ITALIC = 1;
-const FONT_BOLD = 2;
-const FONT_UNDERLINE = 4;
+export const FONT_ITALIC = 1;
+export const FONT_BOLD = 2;
+export const FONT_UNDERLINE = 4;
+export const FONT_STRIKETHROUGH = 8;
 /** Bodies above this size are shown as plain text to keep tokenization bounded. */
 export const MAX_HIGHLIGHT_CHARS = 200_000;
 
@@ -25,11 +26,15 @@ export interface HighlightedToken {
 export interface TokenStyle {
   readonly light?: string;
   readonly dark?: string;
-  /** Bit set of italic (1), bold (2) and underline (4), only when both themes agree. */
+  /** Bit set of italic (1), bold (2), underline (4) and strikethrough (8), only when both themes agree. */
   readonly fontStyle: number;
+  /** Paint the editor foreground where `light` or `dark` is undefined, so default text does not keep a comment color. */
+  readonly foreground?: boolean;
+  /** VS Code theme color ID, used for theme-native features such as bracket-pair colors. */
+  readonly themeColor?: string;
 }
 
-/** A styled token by column range within its line. Default-styled tokens are omitted. */
+/** A styled token by column range within its line. Default-styled tokens are omitted unless default text is painted. */
 export interface StyledToken {
   readonly start: number;
   readonly end: number;
@@ -92,6 +97,7 @@ export class CodeHighlighter {
     ]);
     const core = await createHighlighterCore({
       langs: [
+        import('@shikijs/langs/markdown'),
         import('@shikijs/langs/yaml'),
         import('@shikijs/langs/json'),
         import('@shikijs/langs/sql'),
@@ -102,6 +108,7 @@ export class CodeHighlighter {
         import('@shikijs/langs/javascript'),
         import('@shikijs/langs/typescript'),
         import('@shikijs/langs/html'),
+        import('@shikijs/langs/html-derivative'),
         import('@shikijs/langs/css'),
         import('@shikijs/langs/python'),
         import('@shikijs/langs/cpp'),
@@ -129,7 +136,9 @@ export class CodeHighlighter {
     this.light.colors.forEach((c, i) =>
       rules.push(`body.vscode-light .l${i},body.vscode-high-contrast-light .l${i}{color:${c}}`),
     );
-    rules.push('.fi{font-style:italic}.fb{font-weight:bold}.fu{text-decoration:underline}');
+    rules.push(
+      '.fi{font-style:italic}.fb{font-weight:bold}.fu{text-decoration:underline}.fs{text-decoration:line-through}.fu.fs{text-decoration:underline line-through}',
+    );
     return rules.join('\n');
   }
 
@@ -138,16 +147,20 @@ export class CodeHighlighter {
     return this.tokenizeWithThemes(code, language)?.map((line) => line.map((t) => ({ text: t.content, classes: this.classesFor(t) })));
   }
 
-  /** Per-line styled column ranges for editor decorations; default-colored tokens are left out. */
-  tokenizeStyles(code: string, language: string): StyledToken[][] | undefined {
+  /**
+   * Per-line styled column ranges for editor decorations. Default-colored tokens are left out, unless
+   * `paintDefault` is set: then every token is returned and default text is marked to be painted with the
+   * editor foreground (for prose such as Markdown, which must not stay in the comment color).
+   */
+  tokenizeStyles(code: string, language: string, paintDefault = false): StyledToken[][] | undefined {
     return this.tokenizeWithThemes(code, language)?.map((line) => {
       const out: StyledToken[] = [];
       let column = 0;
       for (const t of line) {
         const start = column;
         column += t.content.length;
-        const style = this.styleFor(t);
-        if (style && t.content.trim()) {
+        const style = this.styleFor(t, paintDefault);
+        if (style && (paintDefault || t.content.trim())) {
           out.push({ start, end: column, style });
         }
       }
@@ -176,11 +189,14 @@ export class CodeHighlighter {
     return `<pre class="code" data-lang="${escapeHtml(language)}"><code>${body}</code></pre>`;
   }
 
-  private styleFor(token: ThemedTokenWithVariants): TokenStyle | undefined {
+  private styleFor(token: ThemedTokenWithVariants, paintDefault: boolean): TokenStyle | undefined {
     const light = this.light.colorFor(token.variants.light?.color);
     const dark = this.dark.colorFor(token.variants.dark?.color);
     const lightFont = token.variants.light?.fontStyle ?? 0;
     const fontStyle = lightFont > 0 && lightFont === (token.variants.dark?.fontStyle ?? 0) ? lightFont : 0;
+    if (paintDefault && !(light && dark)) {
+      return { light, dark, fontStyle, foreground: true };
+    }
     return light || dark || fontStyle ? { light, dark, fontStyle } : undefined;
   }
 
@@ -198,6 +214,9 @@ export class CodeHighlighter {
       }
       if (style & FONT_UNDERLINE) {
         classes.push('fu');
+      }
+      if (style & FONT_STRIKETHROUGH) {
+        classes.push('fs');
       }
     }
     return classes.filter(Boolean).join(' ');

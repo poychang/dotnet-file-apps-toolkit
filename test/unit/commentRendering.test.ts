@@ -75,6 +75,7 @@ describe('code highlighting and preview HTML', function () {
 
   it('loads the supported preview grammars and emits class-based colors', () => {
     for (const lang of [
+      'markdown',
       'yaml',
       'json',
       'sql',
@@ -103,6 +104,7 @@ describe('code highlighting and preview HTML', function () {
     assert.match(highlighter.css, /body\.vscode-light \.l0/);
     assert.match(highlighter.highlightToHtml('<a/>', 'xml')!, /&#60;/);
     assert.ok(highlighter.highlightToHtml('const x: number = 1;', 'typescript')!.includes('class='));
+    assert.match(highlighter.highlightToHtml('~~gone~~', 'markdown')!, /class="[^"]*\bfs\b/, 'strikethrough class');
   });
 
   it('renders each block with its own strategy and source line numbers', () => {
@@ -185,6 +187,47 @@ describe('code highlighting and preview HTML', function () {
       ['8080', '#B5CEA8', '#098658'],
     ]);
     assert.ok(spans.every((s) => s.start >= block.bodyStartOffset && s.end <= block.bodyEndOffset));
+  });
+
+  it('colors Markdown bodies like VS Code and paints default text with the editor foreground', () => {
+    const text = [
+      '/*markdown',
+      '  # Title',
+      '  Some **bold**, *italic*, ~~gone~~ and `code`.',
+      '  - [link](https://example.com)',
+      '  > quote',
+      '  Tag <b>x</b>',
+      '  ```json',
+      '  { "a": 1 }',
+      '  ```',
+      '*/',
+    ].join('\n');
+    const [block] = scanTaggedComments(text).blocks;
+    const spans = mapTokensToSource(block.lineMap, highlighter.tokenizeStyles(block.normalizedBody, 'markdown', true)!);
+    const styleOf = (source: string) => spans.find((s) => text.slice(s.start, s.end) === source)?.style;
+
+    assert.deepEqual(styleOf('# Title'), { light: '#800000', dark: '#569CD6', fontStyle: 2 });
+    assert.deepEqual(styleOf('**bold**'), { light: '#000080', dark: '#569CD6', fontStyle: 2 });
+    assert.equal(styleOf('`code`')?.dark, '#CE9178');
+    assert.equal(styleOf('-')?.dark, '#6796E6');
+    assert.equal(styleOf('>')?.dark, '#6A9955');
+    assert.equal(styleOf('~~gone~~')?.fontStyle, 8);
+    assert.equal(styleOf('https://example.com')?.fontStyle, 4);
+    assert.equal(styleOf('b')?.dark, '#569CD6', 'inline HTML tag name');
+    assert.equal(styleOf('"a"')?.dark, '#9CDCFE', 'fenced JSON');
+
+    for (const plain of ['Some ', ' and ', ' quote']) {
+      const style = styleOf(plain);
+      assert.ok(style?.foreground, `"${plain}" is painted with the editor foreground`);
+      assert.equal(style.light ?? style.dark, undefined);
+    }
+    const italic = styleOf('*italic*');
+    assert.deepEqual([italic?.fontStyle, italic?.foreground], [1, true]);
+
+    // Without painting, default text is left out like it is for code bodies.
+    const unpainted = mapTokensToSource(block.lineMap, highlighter.tokenizeStyles(block.normalizedBody, 'markdown')!);
+    assert.ok(unpainted.length > 0 && unpainted.every((s) => !s.style.foreground));
+    assert.ok(!unpainted.some((s) => ['Some ', ' and ', ' quote'].includes(text.slice(s.start, s.end))));
   });
 });
 

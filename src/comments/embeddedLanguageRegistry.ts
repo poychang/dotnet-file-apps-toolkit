@@ -17,7 +17,10 @@ export interface EmbeddedLanguageDescriptor {
   readonly grammarScope?: string;
   /** VS Code language ID used for embedded-language scopes. */
   readonly vscodeLanguageId?: string;
-  /** Language ID understood by the preview syntax highlighter. Undefined for document mode. */
+  /**
+   * Language ID understood by the bundled syntax highlighter, which colors fenced code in the preview and
+   * tagged bodies in the editor. Document-mode languages are rendered to HTML in the preview instead.
+   */
   readonly previewLanguage?: string;
   /** Rich hover over the comment body. */
   readonly hover?: boolean;
@@ -37,6 +40,7 @@ const SUPPORTED_LANGUAGES: readonly EmbeddedLanguageDescriptor[] = [
     mode: 'document',
     grammarScope: 'text.html.markdown',
     vscodeLanguageId: 'markdown',
+    previewLanguage: 'markdown',
     hover: true,
   },
   {
