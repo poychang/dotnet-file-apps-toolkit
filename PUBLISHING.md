@@ -101,7 +101,7 @@ Get-FileHash .\dotnet-file-apps-toolkit.vsix -Algorithm SHA256
 - `.vscodeignore` 採允許清單，VSIX 只包含執行檔、必要素材、在地化、文法與使用文件，不包含網站、測試及工作流程。
 - `vsce` 已納入鎖定的開發依賴；`npm run vsix` 會透過 `vscode:prepublish` 執行 production build，保留套件與授權檢查。
 
-原創圖示可在 Windows 執行 `.\scripts\generate-icon.ps1` 重新產生；不使用 Microsoft／VS Code 商標作為套件圖示。
+圖示使用薄荷綠摺角文件，結合程式碼括號與播放符號，不使用 Microsoft／VS Code 商標。擴充套件與網站共用 [images/icon.png](./images/icon.png)。更換圖稿時，在 Windows 執行 `.\scripts\generate-icon.ps1 -SourcePath <原始圖稿路徑>`，將至少 256 × 256 的正方形圖片縮放為 256 × 256 PNG，並合成深色背景；腳本不再繪製舊版圖示。
 
 ### 必須由發行者完成
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Replace the extension and website icon with a mint folded-document design combining code and play symbols.
+
 ## 0.2.1
 
 - Add a GitHub Pages introduction site with manual VSIX installation instructions and a stable latest-release download link.
