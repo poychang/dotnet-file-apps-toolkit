@@ -14,7 +14,7 @@ code --install-extension ./dotnet-file-apps-toolkit.vsix
 
 每個 GitHub 正式 Release 都會附上 VSIX、版本說明及 `SHA256SUMS` 校驗檔。首次發行正式版本後，下載連結才會生效；手動更新時，下載新版 VSIX 再安裝即可。
 
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=poychang.dotnet-file-apps-toolkit) 上架後，也可搜尋 `poychang.dotnet-file-apps-toolkit` 安裝。Marketplace 自動發布預設關閉，完成前置設定不代表已經上架。
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=PoyChang.dotnet-file-apps-toolkit) 上架後，也可搜尋 `PoyChang.dotnet-file-apps-toolkit` 安裝。Marketplace 自動發布預設關閉，完成前置設定不代表已經上架。
 
 ## 需求
 

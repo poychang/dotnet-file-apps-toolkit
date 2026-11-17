@@ -95,7 +95,7 @@ Get-FileHash .\dotnet-file-apps-toolkit.vsix -Algorithm SHA256
 
 ### 已完成的儲存庫準備
 
-- Manifest 使用 `poychang.dotnet-file-apps-toolkit` 作為擴充套件 ID。
+- Manifest 使用 `PoyChang.dotnet-file-apps-toolkit` 作為擴充套件 ID，`publisher` 與既有 Marketplace publisher ID `PoyChang` 的大小寫完全一致。
 - 提供 256 × 256 PNG 圖示、深色 Marketplace banner、分類／搜尋關鍵字、網站、repository、issue 與 Q&A 連結。
 - 提供英文／繁體中文 README、安裝教學、功能截圖、相容性說明、changelog 與 MIT LICENSE。
 - `.vscodeignore` 採允許清單，VSIX 只包含執行檔、必要素材、在地化、文法與使用文件，不包含網站、測試及工作流程。
@@ -106,7 +106,8 @@ Get-FileHash .\dotnet-file-apps-toolkit.vsix -Algorithm SHA256
 ### 必須由發行者完成
 
 1. 使用 Microsoft 帳號登入 [Marketplace 管理頁](https://marketplace.visualstudio.com/manage)。
-2. 建立或確認你有權使用的 **publisher ID 為 `poychang`**。GitHub 帳號不會自動建立同名 Marketplace publisher；若 ID 不可用，須同步修改 manifest、網站及 README 的擴充套件 ID。
+2. 確認你有權使用 **publisher ID `PoyChang`**。Marketplace 查詢與 VS Code 比對擴充套件 ID 都不分大小寫（`poychang`、`PoyChang` 指向同一個 publisher），但 manifest 仍應與 publisher ID 的大小寫完全一致。若改用其他 publisher，須同步修改 manifest、網站、README 及整合測試中的擴充套件 ID。
+   - 0.2.1 的 VSIX 使用 `poychang`。VS Code 會將兩者視為同一擴充套件並直接升級，但桌面版的 `workspaceState` 依擴充套件 ID 原字串儲存，因此升級後各工作區記住的執行參數與手動標記的 file-based app 狀態會重置一次；使用者設定不受影響。
 3. 補齊 publisher 顯示名稱與聯絡資訊，確認授權、使用的套件與素材符合發布要求。不要將帳號憑證或聯絡個資寫入儲存庫。
 4. 確認擴充套件名稱可用。首次發布可能需要 Marketplace 驗證；在正式上架成功前，不要宣稱網站的 Marketplace 安裝已可用。
 5. 以實際 VSIX 做安裝與基本操作確認。C# Dev Kit 互通、WSL／SSH／Dev Containers 的實機驗證仍需完成，不能以 CI 取代。

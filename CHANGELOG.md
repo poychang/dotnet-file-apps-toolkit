@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Replace the extension and website icon with a mint folded-document design combining code and play symbols.
+- Change the publisher ID casing to `PoyChang` to match the Visual Studio Marketplace publisher. Upgrading from the 0.2.1 VSIX keeps settings, but resets each workspace's remembered run arguments and manually marked file-based apps once.
 
 ## 0.2.1
 

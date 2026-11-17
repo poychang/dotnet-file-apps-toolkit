@@ -14,7 +14,7 @@ code --install-extension ./dotnet-file-apps-toolkit.vsix
 
 Each stable GitHub Release includes the VSIX, release notes, and `SHA256SUMS`. The download link becomes available after the first stable release. Repeat the installation with a newer VSIX to update manually.
 
-Once published to the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=poychang.dotnet-file-apps-toolkit), you can also install by searching for `poychang.dotnet-file-apps-toolkit`. The repository's Marketplace workflow is opt-in; a prepared manifest does not mean the listing is already live.
+Once published to the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=PoyChang.dotnet-file-apps-toolkit), you can also install by searching for `PoyChang.dotnet-file-apps-toolkit`. The repository's Marketplace workflow is opt-in; a prepared manifest does not mean the listing is already live.
 
 ## Requirements
 

@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type { ToolkitApi } from '../../src/extension';
 import { promises as fs } from 'node:fs';
 
-export const EXTENSION_ID = 'poychang.dotnet-file-apps-toolkit';
+export const EXTENSION_ID = 'PoyChang.dotnet-file-apps-toolkit';
 
 export function workspaceDir(): string {
   const folder = vscode.workspace.workspaceFolders?.[0];
