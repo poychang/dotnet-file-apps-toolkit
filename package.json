@@ -2,7 +2,7 @@
   "name": "dotnet-file-apps-toolkit",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "PoyChang",
   "license": "MIT",
   "repository": {
