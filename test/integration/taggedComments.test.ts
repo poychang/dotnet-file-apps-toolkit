@@ -87,7 +87,7 @@ describe('Tagged comments', function () {
     const { document } = await open('tagged-markdown.cs');
     const text = await hoverAt(document, 'validates **inventory**');
     assert.match(text, /# Inventory Utility/);
-    assert.match(text, /\| Option \| Default \|/);
+    assert.match(text, /│ Option │ Default │/);
 
     assert.equal(await hoverAt(document, 'Console.WriteLine'), '');
 
@@ -102,6 +102,36 @@ describe('Tagged comments', function () {
       assert.equal(await hoverAt(document, 'validates **inventory**'), '');
     } finally {
       await setSetting('comments.markdown.hover', undefined);
+    }
+  });
+
+  it('draws hover tables and quote bars and only lets the hover link open the preview', async () => {
+    const { document } = await open('tagged-markdown.cs');
+    const hovers = await vscode.commands.executeCommand<vscode.Hover[]>(
+      'vscode.executeHoverProvider',
+      document.uri,
+      positionOf(document, 'validates **inventory**'),
+    );
+    const [content, link] = (hovers ?? []).flatMap((h) => h.contents) as vscode.MarkdownString[];
+    assert.match(content.value, /│ Option │ Default │\n├────────┼─────────┤\n│ strict │ {4}true │/);
+    assert.match(
+      content.value,
+      /<span style="background-color:var\(--vscode-textBlockQuote-border\);">&nbsp;<\/span>&nbsp;&nbsp;Rendering never executes anything/,
+    );
+    assert.deepEqual(content.isTrusted, { enabledCommands: [] });
+    assert.equal(content.supportHtml, false);
+    assert.deepEqual(link.isTrusted, { enabledCommands: ['dotnetFileApps.previewComments'] });
+
+    const query = /\]\(command:dotnetFileApps\.previewComments\?([^)\s]+)\)$/.exec(link.value)?.[1];
+    assert.ok(query, link.value);
+    const [target] = JSON.parse(decodeURIComponent(query)) as [vscode.Uri];
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    await open('ordinary-comments.cs');
+    try {
+      await vscode.commands.executeCommand('dotnetFileApps.previewComments', vscode.Uri.from(target));
+      await waitFor(() => api.previews.get(document.uri), 10_000, 'preview opened from the hover link');
+    } finally {
+      await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     }
   });
 

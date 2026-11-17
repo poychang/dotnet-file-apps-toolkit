@@ -87,7 +87,8 @@ features:
 */
 ```
 
-`/*markdown` supports a rendered hover and a full preview panel. Use **Preview Tagged Comments** from the editor or Command Palette to open the preview.
+`/*markdown` supports a rendered hover and a full preview panel. Use **Preview Tagged Comments** from the editor, the Command Palette, or the link at the bottom of the hover to open the preview.
+Because VS Code hovers cannot be styled by extensions, the hover draws tables with box-drawing characters (tables wider than about 60 columns keep the native layout) and marks simple `>` quotes with a theme-colored bar. Command links and raw HTML written in the comment are still never executed or rendered.
 The preview's Copy button and the **Copy Tagged Comment Body** command copy the exact source body. **Extract Tagged Comment to File…** uses the normalized body, asks before creating or overwriting a file, and never executes it.
 
 ### Preview screenshots

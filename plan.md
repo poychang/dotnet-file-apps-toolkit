@@ -260,7 +260,7 @@ var sample = "/*json\n{ \"not\": \"a real comment\" }\n*/";
 
 ### 6.4 Hover, rendering, and security
 
-- Markdown Hover via `registerHoverProvider` + `MarkdownString` (`isTrusted=false`, `supportHtml=false`), only for recognized `markdown` comment bodies.
+- Markdown Hover via `registerHoverProvider` + `MarkdownString` (`supportHtml=false`), only for recognized `markdown` comment bodies. The body uses `isTrusted={enabledCommands:[]}` so no command link in the comment can run; user-written `<span>` tags are stripped first because trusted hovers keep `<span>`. Hovers cannot be styled with CSS, so tables are redrawn as box-drawing text (≤60 columns) and simple quotes get a theme-colored `<span>` bar. A separate hover part links to `dotnetFileApps.previewComments`, the only enabled command.
 - For code tags, Hover is optional; if enabled, show a bounded code-fenced excerpt tagged with language rather than pretending YAML/SQL has rich document rendering.
 - Webview Preview uses sanitized Markdown (disable raw HTML by default) and HTML-escaped highlighted code. Implement a strict CSP, fixed `localResourceRoots`, no `command:` link execution, no remote scripts, and no parsing/evaluating arbitrary embedded code.
 - Expose jump-to-source navigation via explicit VS Code messages; validate message contents and avoid arbitrary command dispatch or path traversal.

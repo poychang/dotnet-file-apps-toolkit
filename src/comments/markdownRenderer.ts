@@ -92,13 +92,18 @@ export function neutralizeImages(markdown: string): string {
         fence = f[1];
         return line;
       }
-      let out = '';
-      let last = 0;
-      for (const m of line.matchAll(CODE_SPAN_RE)) {
-        out += line.slice(last, m.index).replace(/!\[/g, '\\![') + m[0];
-        last = m.index + m[0].length;
-      }
-      return out + line.slice(last).replace(/!\[/g, '\\![');
+      return replaceOutsideCodeSpans(line, (text) => text.replace(/!\[/g, '\\!['));
     })
     .join('\n');
+}
+
+/** Applies `replace` to the parts of one Markdown line that are outside code spans. */
+export function replaceOutsideCodeSpans(line: string, replace: (text: string) => string): string {
+  let out = '';
+  let last = 0;
+  for (const m of line.matchAll(CODE_SPAN_RE)) {
+    out += replace(line.slice(last, m.index)) + m[0];
+    last = m.index + m[0].length;
+  }
+  return out + replace(line.slice(last));
 }
